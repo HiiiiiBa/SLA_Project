@@ -1,0 +1,58 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:sla_monitoring_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+  flyway:
+    enabled: false
+
+  h2:
+    console:
+      enabled: false
+
+  mail:
+    host: localhost
+    port: 1025
+    username:
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: false
+
+sla:
+  engine:
+    enabled: false
+  simulation:
+    enabled: false
+
+alert:
+  notification:
+    email-enabled: false
+    websocket-enabled: false
+
+app:
+  demo:
+    seed-enabled: false
+
+management:
+  health:
+    mail:
+      enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.sla.monitoring: INFO

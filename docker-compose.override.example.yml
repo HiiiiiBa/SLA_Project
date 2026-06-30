@@ -1,0 +1,7 @@
+# Optional: expose PostgreSQL on the host (e.g. for pgAdmin).
+# Use 5434 if the legacy container sla-postgres already uses 5433.
+#
+# services:
+#   postgres:
+#     ports:
+#       - "5434:5432"

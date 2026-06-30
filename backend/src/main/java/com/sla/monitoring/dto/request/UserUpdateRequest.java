@@ -1,0 +1,36 @@
+package com.sla.monitoring.dto.request;
+
+import com.sla.monitoring.entity.enums.Role;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserUpdateRequest {
+
+    @NotBlank(message = "First name is required")
+    private String firstName;
+
+    @NotBlank(message = "Last name is required")
+    private String lastName;
+
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be valid")
+    private String email;
+
+    @Size(min = 8, message = "Password must be at least 8 characters")
+    private String password;
+
+    @NotNull(message = "Role is required")
+    private Role role;
+
+    private Boolean enabled;
+}
