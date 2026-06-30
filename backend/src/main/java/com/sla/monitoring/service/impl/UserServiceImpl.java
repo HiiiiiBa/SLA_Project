@@ -92,6 +92,33 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 
+    @Override
+    @Transactional
+    public UserResponse activateUser(Long id) {
+        User user = findUserEntityById(id);
+        user.setEnabled(true);
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public UserResponse deactivateUser(Long id) {
+        User user = findUserEntityById(id);
+        user.setEnabled(false);
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public UserResponse resetPassword(Long id, String password) {
+        if (!StringUtils.hasText(password) || password.length() < 8) {
+            throw new BusinessException("Password must be at least 8 characters");
+        }
+        User user = findUserEntityById(id);
+        user.setPassword(passwordEncoder.encode(password));
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
     private User findUserEntityById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));

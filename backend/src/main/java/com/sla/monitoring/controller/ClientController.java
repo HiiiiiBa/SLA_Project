@@ -3,6 +3,7 @@ package com.sla.monitoring.controller;
 import com.sla.monitoring.dto.ApiResponse;
 import com.sla.monitoring.dto.request.ClientCreateRequest;
 import com.sla.monitoring.dto.request.ClientUpdateRequest;
+import com.sla.monitoring.dto.response.ClientPortfolioResponse;
 import com.sla.monitoring.dto.response.ClientResponse;
 import com.sla.monitoring.service.ClientService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -63,6 +64,12 @@ public class ClientController {
             @Valid @RequestBody ClientUpdateRequest request) {
         ClientResponse response = clientService.updateClient(id, request);
         return ResponseEntity.ok(ApiResponse.success("Client updated successfully", response));
+    }
+
+    @GetMapping("/{id}/portfolio")
+    @Operation(summary = "Get client SLAs and associated services")
+    public ResponseEntity<ApiResponse<ClientPortfolioResponse>> getPortfolio(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(clientService.getClientPortfolio(id)));
     }
 
     @DeleteMapping("/{id}")

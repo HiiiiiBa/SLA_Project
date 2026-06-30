@@ -1,6 +1,7 @@
 package com.sla.monitoring.report.model;
 
 import com.sla.monitoring.engine.model.SlaEvaluationResult;
+import com.sla.monitoring.entity.Alert;
 import com.sla.monitoring.entity.Client;
 import com.sla.monitoring.entity.Incident;
 import com.sla.monitoring.entity.MonitoringMetric;
@@ -24,4 +25,5 @@ public class ReportExportData {
     SlaEvaluationResult evaluation;
     List<MonitoringMetric> metrics;
     List<Incident> incidents;
+    List<Alert> alerts;
 }

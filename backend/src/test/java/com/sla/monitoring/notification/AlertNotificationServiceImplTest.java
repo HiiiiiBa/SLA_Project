@@ -11,6 +11,7 @@ import com.sla.monitoring.entity.enums.Role;
 import com.sla.monitoring.notification.dto.AlertNotificationMessage;
 import com.sla.monitoring.repository.AlertRepository;
 import com.sla.monitoring.repository.UserRepository;
+import com.sla.monitoring.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,9 @@ class AlertNotificationServiceImplTest {
 
     @Mock
     private AlertRepository alertRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private AlertNotificationServiceImpl alertNotificationService;

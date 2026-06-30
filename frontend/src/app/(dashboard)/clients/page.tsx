@@ -1,12 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Building2, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { ClientFormModal } from "@/components/forms/ClientFormModal";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, apiFetch } from "@/lib/api";
@@ -101,6 +103,11 @@ export default function ClientsPage() {
                     <td className="px-6 py-4 text-muted">{formatDate(client.createdAt)}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
+                        <Link href={`/clients/${client.id}`}>
+                          <Button variant="secondary">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
                         <Button
                           variant="secondary"
                           onClick={() => {
@@ -121,7 +128,11 @@ export default function ClientsPage() {
             </table>
           )}
           {!loading && clients.length === 0 && (
-            <div className="px-6 py-10 text-sm text-muted">Aucun client trouvé.</div>
+            <EmptyState
+              icon={Building2}
+              title="Aucun client enregistré"
+              description="Ajoutez un client pour lui associer des contrats SLA et des rapports."
+            />
           )}
         </CardBody>
       </Card>

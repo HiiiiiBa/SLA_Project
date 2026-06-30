@@ -166,6 +166,9 @@ public class SlaCalculator {
         if (sla.getStatus() == SlaStatus.ARCHIVED) {
             return SlaStatus.ARCHIVED;
         }
+        if (sla.getStatus() == SlaStatus.INACTIVE) {
+            return SlaStatus.INACTIVE;
+        }
 
         boolean uptimeBreached = uptimePercentage < sla.getUptimeTarget();
         boolean responseBreached = !metrics.isEmpty() && averageResponseTime > sla.getResponseTimeLimit();

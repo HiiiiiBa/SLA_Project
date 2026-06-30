@@ -22,7 +22,7 @@ interface SlaFormModalProps {
   sla?: Sla | null;
 }
 
-const statuses: SlaStatus[] = ["ACTIVE", "WARNING", "BREACHED", "ARCHIVED"];
+const statuses: SlaStatus[] = ["ACTIVE", "INACTIVE", "WARNING", "BREACHED", "ARCHIVED"];
 
 export function SlaFormModal({ open, onClose, onSaved, sla }: SlaFormModalProps) {
   const isEdit = Boolean(sla);
@@ -66,6 +66,7 @@ export function SlaFormModal({ open, onClose, onSaved, sla }: SlaFormModalProps)
           uptimeTarget: Number(uptimeTarget),
           responseTimeLimit: Number(responseTimeLimit),
           errorRateLimit: Number(errorRateLimit),
+          clientId: Number(clientId),
         };
         await apiFetch<Sla>(`/api/slas/${sla.id}`, {
           method: "PUT",
@@ -139,6 +140,24 @@ export function SlaFormModal({ open, onClose, onSaved, sla }: SlaFormModalProps)
               </Select>
             </div>
           </>
+        )}
+        {isEdit && (
+          <div className="space-y-2">
+            <Label htmlFor="sla-client-edit">Client associé</Label>
+            <Select
+              id="sla-client-edit"
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              required
+            >
+              <option value="">Sélectionner un client</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </Select>
+          </div>
         )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-2">

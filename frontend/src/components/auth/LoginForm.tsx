@@ -8,6 +8,12 @@ import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
+const DEMO_ACCOUNTS = [
+  { role: "Administrateur", email: "admin@sla.com", password: "Admin123!" },
+  { role: "Opérateur", email: "user@sla.com", password: "User123!" },
+  { role: "Client Acme", email: "client@acme.com", password: "Client123!" },
+] as const;
+
 export function LoginForm() {
   const { login, user } = useAuth();
   const router = useRouter();
@@ -37,113 +43,147 @@ export function LoginForm() {
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="relative hidden overflow-hidden bg-slate-100 lg:flex lg:flex-col lg:justify-between lg:p-12 dark:bg-slate-950">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.25),_transparent_45%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.18),_transparent_40%)]" />
-        <div className="relative">
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 ring-1 ring-emerald-400/30">
-              <Activity className="h-6 w-6 text-emerald-400" />
+    <div className="grid min-h-screen lg:grid-cols-2 bg-gradient-to-br from-background to-background">
+      {/* Left side - Hero */}
+      <div className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.15),_transparent_50%),radial-gradient(circle_at_bottom_right,_rgba(6,182,212,0.1),_transparent_50%)]" />
+        <div className="relative space-y-8 z-10">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30">
+              <Activity className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-emerald-300">SLA Monitoring</p>
-              <p className="text-xs text-slate-400">Service Level Agreement Platform</p>
+              <p className="text-sm font-bold text-primary">SLA Monitoring</p>
+              <p className="text-xs text-muted">Plateforme d&apos;Accord de Niveau de Service</p>
             </div>
           </div>
-          <h1 className="max-w-md text-4xl font-semibold tracking-tight text-white">
-            Pilotez vos SLA avec clarté et réactivité
-          </h1>
-          <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-400">
-            Surveillez la disponibilité, détectez les dérives en temps réel et
-            exportez vos rapports PDF/CSV en un clic.
-          </p>
+          <div>
+            <h1 className="max-w-md text-5xl font-bold tracking-tight text-white leading-tight">
+              Pilotez vos SLA avec clarté
+            </h1>
+            <p className="mt-6 max-w-lg text-base leading-relaxed text-muted">
+              Surveillez la disponibilité en temps réel, détectez les dérives et exportez vos rapports d&apos;un seul clic. Toute votre conformité SLA au même endroit.
+            </p>
+          </div>
         </div>
-        <div className="relative grid grid-cols-3 gap-4">
+
+        <div className="relative grid grid-cols-3 gap-4 z-10">
           {[
-            { label: "Uptime", value: "99.9%" },
-            { label: "Alertes", value: "Temps réel" },
-            { label: "Rapports", value: "PDF / CSV" },
+            { label: "Disponibilité", value: "99.9%" },
+            { label: "Alertes", value: "Instantanées" },
+            { label: "Rapports", value: "Automatisés" },
           ].map((item) => (
             <div
               key={item.label}
-              className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur"
+              className="rounded-lg border border-primary/20 bg-primary/5 backdrop-blur p-4 hover:border-primary/40 transition-colors"
             >
-              <p className="text-xs uppercase tracking-wider text-slate-400">
+              <p className="text-xs uppercase tracking-wider text-muted font-semibold">
                 {item.label}
               </p>
-              <p className="mt-2 text-lg font-semibold text-white">{item.value}</p>
+              <p className="mt-2 text-lg font-bold text-primary">{item.value}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="flex items-center justify-center bg-slate-50 px-6 py-12 dark:bg-slate-950">
-        <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden">
+      {/* Right side - Form */}
+      <div className="flex items-center justify-center px-6 py-12 bg-gradient-to-b from-background to-background/50">
+        <div className="w-full max-w-md space-y-8">
+          {/* Mobile header */}
+          <div className="mb-8 lg:hidden animate-fade-in">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white">
-                <Activity className="h-5 w-5" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent shadow-lg">
+                <Activity className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-heading">SLA Monitoring</p>
-                <p className="text-sm text-muted">Connexion sécurisée</p>
+                <p className="font-bold text-foreground">SLA Monitoring</p>
+                <p className="text-xs text-muted">Connexion sécurisée</p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900 dark:shadow-slate-950/50">
-            <h2 className="text-2xl font-semibold text-heading">Connexion</h2>
-            <p className="mt-2 text-sm text-muted">
-              Accédez à votre tableau de bord SLA
-            </p>
+          {/* Login card */}
+          <div className="surface-card p-8 animate-fade-in">
+            <div className="space-y-2 mb-8">
+              <h2 className="text-3xl font-bold text-foreground">Connexion</h2>
+              <p className="text-sm text-muted">
+                Accédez à votre tableau de bord SLA
+              </p>
+            </div>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email field */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-body">Email</label>
+                <label className="text-sm font-semibold text-foreground">Email</label>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                   <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
+                    className="pl-11"
                     placeholder="admin@sla.com"
                     required
                   />
                 </div>
               </div>
 
+              {/* Password field */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-body">
+                <label className="text-sm font-semibold text-foreground">
                   Mot de passe
                 </label>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                   <Input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
+                    className="pl-11"
                     placeholder="••••••••"
                     required
                   />
                 </div>
               </div>
 
+              {/* Error message */}
               {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="rounded-lg border border-error/50 bg-error/10 px-4 py-3 text-sm text-error font-medium animate-slide-in">
                   {error}
                 </div>
               )}
 
+              {/* Submit button */}
               <Button type="submit" className="w-full" loading={loading}>
                 Se connecter
               </Button>
             </form>
 
-            <p className="mt-6 text-center text-xs text-slate-400">
-              Compte démo : admin@sla.com / Admin123!
-            </p>
+            {/* Demo credentials */}
+            <div className="mt-6 space-y-3 rounded-lg border border-border bg-card/50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+                Comptes de démonstration
+              </p>
+              <div className="grid gap-2">
+                {DEMO_ACCOUNTS.map((account) => (
+                  <button
+                    key={account.email}
+                    type="button"
+                    onClick={() => {
+                      setEmail(account.email);
+                      setPassword(account.password);
+                    }}
+                    className="flex items-center justify-between rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-left text-sm transition hover:border-primary/40 hover:bg-primary/5"
+                  >
+                    <span className="font-medium text-heading">{account.role}</span>
+                    <span className="font-mono text-xs text-muted">{account.email}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted">
+                Cliquez sur un compte pour remplir le formulaire, puis connectez-vous.
+              </p>
+            </div>
           </div>
         </div>
       </div>

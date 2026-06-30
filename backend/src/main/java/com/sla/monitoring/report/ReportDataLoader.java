@@ -7,6 +7,7 @@ import com.sla.monitoring.entity.MonitoringMetric;
 import com.sla.monitoring.entity.Report;
 import com.sla.monitoring.exception.ResourceNotFoundException;
 import com.sla.monitoring.report.model.ReportExportData;
+import com.sla.monitoring.repository.AlertRepository;
 import com.sla.monitoring.repository.IncidentRepository;
 import com.sla.monitoring.repository.MonitoringMetricRepository;
 import com.sla.monitoring.repository.ReportRepository;
@@ -28,6 +29,7 @@ public class ReportDataLoader {
     private final ReportRepository reportRepository;
     private final MonitoringMetricRepository monitoringMetricRepository;
     private final IncidentRepository incidentRepository;
+    private final AlertRepository alertRepository;
     private final SlaCalculator slaCalculator;
 
     public ReportExportData load(Long reportId) {
@@ -44,6 +46,9 @@ public class ReportDataLoader {
         List<Incident> incidents = incidentRepository.findBySlaId(sla.getId()).stream()
                 .filter(incident -> overlapsPeriod(incident, periodStart, periodEnd))
                 .toList();
+        List<com.sla.monitoring.entity.Alert> alerts = alertRepository.findBySlaId(sla.getId()).stream()
+                .filter(alert -> overlapsPeriod(alert.getCreatedAt(), periodStart, periodEnd))
+                .toList();
 
         SlaEvaluationResult evaluation = slaCalculator.evaluate(
                 sla, metrics, incidents, periodStart, periodEnd);
@@ -55,7 +60,16 @@ public class ReportDataLoader {
                 .evaluation(evaluation)
                 .metrics(metrics)
                 .incidents(incidents)
+                .alerts(alerts)
                 .build();
+    }
+
+    private boolean overlapsPeriod(java.time.LocalDateTime timestamp,
+                                   LocalDateTime periodStart,
+                                   LocalDateTime periodEnd) {
+        return timestamp != null
+                && !timestamp.isBefore(periodStart)
+                && timestamp.isBefore(periodEnd);
     }
 
     private boolean overlapsPeriod(Incident incident, LocalDateTime periodStart, LocalDateTime periodEnd) {

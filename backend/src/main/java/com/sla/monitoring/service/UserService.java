@@ -19,4 +19,10 @@ public interface UserService {
     List<UserResponse> findAll();
 
     UserResponse findByEmail(String email);
+
+    UserResponse activateUser(Long id);
+
+    UserResponse deactivateUser(Long id);
+
+    UserResponse resetPassword(Long id, String password);
 }

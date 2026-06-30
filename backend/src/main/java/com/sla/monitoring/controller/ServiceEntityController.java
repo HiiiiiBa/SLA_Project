@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.bind.annotation.RequestParam;
+
 import java.util.List;
 
 /**
@@ -39,8 +41,9 @@ public class ServiceEntityController {
 
     @GetMapping
     @Operation(summary = "Get all services")
-    public ResponseEntity<ApiResponse<List<ServiceEntityResponse>>> findAll() {
-        return ResponseEntity.ok(ApiResponse.success(serviceEntityService.findAll()));
+    public ResponseEntity<ApiResponse<List<ServiceEntityResponse>>> findAll(
+            @RequestParam(required = false) Long slaId) {
+        return ResponseEntity.ok(ApiResponse.success(serviceEntityService.findAll(slaId)));
     }
 
     @GetMapping("/{id}")

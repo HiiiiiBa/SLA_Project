@@ -32,4 +32,7 @@ public class SlaUpdateRequest {
     @NotNull(message = "Error rate limit is required")
     @PositiveOrZero(message = "Error rate limit must be greater than or equal to 0")
     private Double errorRateLimit;
+
+    @NotNull(message = "Client ID is required")
+    private Long clientId;
 }

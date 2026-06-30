@@ -10,6 +10,7 @@ import com.sla.monitoring.exception.BusinessException;
 import com.sla.monitoring.exception.ResourceNotFoundException;
 import com.sla.monitoring.mapper.SlaMapper;
 import com.sla.monitoring.repository.ClientRepository;
+import com.sla.monitoring.repository.ServiceRepository;
 import com.sla.monitoring.repository.SlaRepository;
 import com.sla.monitoring.service.SlaService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class SlaServiceImpl implements SlaService {
 
     private final SlaRepository slaRepository;
     private final ClientRepository clientRepository;
+    private final ServiceRepository serviceRepository;
     private final SlaMapper slaMapper;
 
     @Override
@@ -36,7 +38,7 @@ public class SlaServiceImpl implements SlaService {
         Sla sla = slaMapper.toEntity(request);
         sla.setClient(client);
 
-        return slaMapper.toResponse(slaRepository.save(sla));
+        return enrichResponse(slaRepository.save(sla));
     }
 
     @Override
@@ -46,8 +48,9 @@ public class SlaServiceImpl implements SlaService {
 
         Sla sla = findSlaEntityById(id);
         slaMapper.updateEntity(request, sla);
+        sla.setClient(findClientById(request.getClientId()));
 
-        return slaMapper.toResponse(slaRepository.save(sla));
+        return enrichResponse(slaRepository.save(sla));
     }
 
     @Override
@@ -55,15 +58,29 @@ public class SlaServiceImpl implements SlaService {
     public SlaResponse archiveSLA(Long id) {
         Sla sla = findSlaEntityById(id);
         sla.setStatus(SlaStatus.ARCHIVED);
-        return slaMapper.toResponse(slaRepository.save(sla));
+        return enrichResponse(slaRepository.save(sla));
     }
 
     @Override
     @Transactional
     public SlaResponse activateSLA(Long id) {
         Sla sla = findSlaEntityById(id);
+        if (sla.getStatus() == SlaStatus.ARCHIVED) {
+            throw new BusinessException("Cannot activate an archived SLA. Restore it manually or create a new contract.");
+        }
         sla.setStatus(SlaStatus.ACTIVE);
-        return slaMapper.toResponse(slaRepository.save(sla));
+        return enrichResponse(slaRepository.save(sla));
+    }
+
+    @Override
+    @Transactional
+    public SlaResponse deactivateSLA(Long id) {
+        Sla sla = findSlaEntityById(id);
+        if (sla.getStatus() == SlaStatus.ARCHIVED) {
+            throw new BusinessException("Cannot deactivate an archived SLA");
+        }
+        sla.setStatus(SlaStatus.INACTIVE);
+        return enrichResponse(slaRepository.save(sla));
     }
 
     @Override
@@ -74,15 +91,27 @@ public class SlaServiceImpl implements SlaService {
     }
 
     @Override
-    public List<SlaResponse> getAll() {
-        return slaRepository.findAll().stream()
-                .map(slaMapper::toResponse)
+    public List<SlaResponse> getAll(Long clientId) {
+        List<Sla> slas = clientId == null
+                ? slaRepository.findAllWithClient()
+                : slaRepository.findByClientIdWithClient(clientId);
+
+        return slas.stream()
+                .map(this::enrichResponse)
                 .toList();
     }
 
     @Override
     public SlaResponse getById(Long id) {
-        return slaMapper.toResponse(findSlaEntityById(id));
+        Sla sla = slaRepository.findByIdWithClient(id)
+                .orElseThrow(() -> new ResourceNotFoundException("SLA", "id", id));
+        return enrichResponse(sla);
+    }
+
+    private SlaResponse enrichResponse(Sla sla) {
+        SlaResponse response = slaMapper.toResponse(sla);
+        response.setServiceCount(serviceRepository.findBySlaId(sla.getId()).size());
+        return response;
     }
 
     private void validateSlaMetrics(Double uptimeTarget, Integer responseTimeLimit, Double errorRateLimit) {

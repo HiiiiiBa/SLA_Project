@@ -1,5 +1,6 @@
 package com.sla.monitoring.service.impl;
 
+import com.sla.monitoring.alert.AutomaticAlertService;
 import com.sla.monitoring.dto.request.ServiceEntityCreateRequest;
 import com.sla.monitoring.dto.request.ServiceEntityUpdateRequest;
 import com.sla.monitoring.dto.request.ServiceStatusChangeRequest;
@@ -24,6 +25,7 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
     private final ServiceRepository serviceRepository;
     private final SlaRepository slaRepository;
     private final ServiceEntityMapper serviceEntityMapper;
+    private final AutomaticAlertService automaticAlertService;
 
     @Override
     @Transactional
@@ -43,9 +45,16 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
         validateStatus(request.getStatus());
 
         Service service = findServiceEntityById(id);
+        ServiceStatus previousStatus = service.getStatus();
         serviceEntityMapper.updateEntity(request, service);
 
-        return serviceEntityMapper.toResponse(serviceRepository.save(service));
+        if (request.getSlaId() != null && !request.getSlaId().equals(service.getSla().getId())) {
+            service.setSla(findSlaById(request.getSlaId()));
+        }
+
+        Service saved = serviceRepository.save(service);
+        notifyIfServiceDown(saved, previousStatus);
+        return serviceEntityMapper.toResponse(saved);
     }
 
     @Override
@@ -56,10 +65,19 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
     }
 
     @Override
-    public java.util.List<ServiceEntityResponse> findAll() {
-        return serviceRepository.findAll().stream()
+    public java.util.List<ServiceEntityResponse> findAll(Long slaId) {
+        java.util.List<Service> services = slaId == null
+                ? serviceRepository.findAllWithSla()
+                : serviceRepository.findBySlaIdWithSla(slaId);
+
+        return services.stream()
                 .map(serviceEntityMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    public java.util.List<ServiceEntityResponse> findBySlaId(Long slaId) {
+        return findAll(slaId);
     }
 
     @Override
@@ -73,9 +91,18 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
         validateStatus(request.getStatus());
 
         Service service = findServiceEntityById(id);
+        ServiceStatus previousStatus = service.getStatus();
         service.setStatus(request.getStatus());
 
-        return serviceEntityMapper.toResponse(serviceRepository.save(service));
+        Service saved = serviceRepository.save(service);
+        notifyIfServiceDown(saved, previousStatus);
+        return serviceEntityMapper.toResponse(saved);
+    }
+
+    private void notifyIfServiceDown(Service service, ServiceStatus previousStatus) {
+        if (service.getStatus() == ServiceStatus.DOWN && previousStatus != ServiceStatus.DOWN) {
+            automaticAlertService.createServiceDownAlert(service, service.getSla());
+        }
     }
 
     private void validateStatus(ServiceStatus status) {

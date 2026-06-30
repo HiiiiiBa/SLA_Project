@@ -3,13 +3,14 @@ package com.sla.monitoring.mapper;
 import com.sla.monitoring.dto.request.AlertCreateRequest;
 import com.sla.monitoring.dto.response.AlertResponse;
 import com.sla.monitoring.entity.Alert;
+import com.sla.monitoring.entity.Service;
 import com.sla.monitoring.entity.Sla;
 import javax.annotation.processing.Generated;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-06-30T09:44:30+0100",
+    date = "2026-06-30T12:04:44+0100",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.10 (Oracle Corporation)"
 )
 @Component
@@ -24,6 +25,9 @@ public class AlertMapperImpl implements AlertMapper {
         AlertResponse.AlertResponseBuilder alertResponse = AlertResponse.builder();
 
         alertResponse.slaId( alertSlaId( alert ) );
+        alertResponse.slaName( alertSlaName( alert ) );
+        alertResponse.serviceId( alertServiceId( alert ) );
+        alertResponse.serviceName( alertServiceName( alert ) );
         alertResponse.id( alert.getId() );
         alertResponse.type( alert.getType() );
         alertResponse.message( alert.getMessage() );
@@ -54,5 +58,29 @@ public class AlertMapperImpl implements AlertMapper {
             return null;
         }
         return sla.getId();
+    }
+
+    private String alertSlaName(Alert alert) {
+        Sla sla = alert.getSla();
+        if ( sla == null ) {
+            return null;
+        }
+        return sla.getName();
+    }
+
+    private Long alertServiceId(Alert alert) {
+        Service service = alert.getService();
+        if ( service == null ) {
+            return null;
+        }
+        return service.getId();
+    }
+
+    private String alertServiceName(Alert alert) {
+        Service service = alert.getService();
+        if ( service == null ) {
+            return null;
+        }
+        return service.getName();
     }
 }

@@ -1,3 +1,4 @@
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\alert\AutomaticAlertService.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\audit\BaseAuditEntity.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\audit\package-info.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\config\AlertNotificationProperties.java
@@ -6,6 +7,7 @@ C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\config\
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\config\DataSeeder.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\config\DemoDataProperties.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\config\DemoDataSeeder.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\config\DemoRichContentSeeder.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\config\MetricSimulationProperties.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\config\OpenApiConfig.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\config\PasswordEncoderConfig.java
@@ -17,6 +19,7 @@ C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\control
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\controller\IncidentController.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\controller\MetricSimulationController.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\controller\MonitoringMetricController.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\controller\NotificationController.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\controller\ReportController.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\controller\ServiceEntityController.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\controller\SlaController.java
@@ -40,17 +43,21 @@ C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\req
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\request\SlaCreateRequest.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\request\SlaUpdateRequest.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\request\UserCreateRequest.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\request\UserResetPasswordRequest.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\request\UserUpdateRequest.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\AlertResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\AuthenticationResponse.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\ClientPortfolioResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\ClientResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\IncidentResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\MetricSimulationResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\MonitoringMetricResponse.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\NotificationResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\ReportResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\ServiceEntityResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\SlaEvaluationResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\SlaResponse.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\SlaWithServicesResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\dto\response\UserResponse.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\engine\model\SlaEvaluationResult.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\engine\SlaCalculator.java
@@ -60,12 +67,15 @@ C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\enums\AlertType.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\enums\IncidentSeverity.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\enums\MetricStatus.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\enums\NotificationChannel.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\enums\NotificationStatus.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\enums\ReportFormat.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\enums\Role.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\enums\ServiceStatus.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\enums\SlaStatus.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\Incident.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\MonitoringMetric.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\Notification.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\RefreshToken.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\Report.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\entity\Service.java
@@ -103,6 +113,7 @@ C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\reposit
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\repository\ClientRepository.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\repository\IncidentRepository.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\repository\MonitoringMetricRepository.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\repository\NotificationRepository.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\repository\package-info.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\repository\RefreshTokenRepository.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\repository\ReportRepository.java
@@ -130,6 +141,7 @@ C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\impl\IncidentServiceImpl.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\impl\MetricSimulationServiceImpl.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\impl\MonitoringMetricServiceImpl.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\impl\NotificationServiceImpl.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\impl\ReportServiceImpl.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\impl\ServiceEntityServiceImpl.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\impl\SlaEngineServiceImpl.java
@@ -138,6 +150,7 @@ C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\IncidentService.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\MetricSimulationService.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\MonitoringMetricService.java
+C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\NotificationService.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\ReportService.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\ServiceEntityService.java
 C:\Users\HP\Desktop\SLA_Project\backend\src\main\java\com\sla\monitoring\service\SlaEngineService.java

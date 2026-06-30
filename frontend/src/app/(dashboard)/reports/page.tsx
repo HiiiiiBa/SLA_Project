@@ -1,22 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Download, FileSpreadsheet, FileText, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { useAuth } from "@/context/AuthContext";
 import { ApiError, apiFetch, downloadReport } from "@/lib/api";
 import { formatDate, formatScore } from "@/lib/utils";
 import type { Report } from "@/types";
 
 export default function ReportsPage() {
+  const { isAdmin } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadReports = useCallback(() => {
+    setLoading(true);
+    setError(null);
     apiFetch<Report[]>("/api/reports")
       .then(setReports)
       .catch((err) =>
@@ -24,6 +29,10 @@ export default function ReportsPage() {
       )
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadReports();
+  }, [loadReports]);
 
   async function handleDownload(reportId: number, format: "pdf" | "csv") {
     setDownloadingId(`${reportId}-${format}`);
@@ -34,14 +43,38 @@ export default function ReportsPage() {
     }
   }
 
+  async function handleDelete(report: Report) {
+    if (!confirm(`Supprimer le rapport #${report.id} ?`)) return;
+    try {
+      await apiFetch<void>(`/api/reports/${report.id}`, { method: "DELETE" });
+      loadReports();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Suppression impossible");
+    }
+  }
+
   return (
     <>
       <Header
         title="Rapports"
-        description="Consultez et exportez vos rapports SLA au format PDF ou CSV."
+        description="Export PDF/CSV : statut SLA, uptime, incidents, alertes et performance globale."
       />
 
-      {error && <ErrorBanner message={error} />}
+      {error && <ErrorBanner message={error} onRetry={loadReports} />}
+
+      <Card className="mb-6">
+        <CardHeader title="Contenu des rapports" />
+        <CardBody>
+          <ul className="grid gap-2 text-sm text-body sm:grid-cols-2 lg:grid-cols-3">
+            <li>Statut SLA (ACTIVE, WARNING, BREACHED…)</li>
+            <li>Uptime réalisé vs objectif</li>
+            <li>Liste des incidents sur la période</li>
+            <li>Liste des alertes sur la période</li>
+            <li>Performance globale (score, verdict)</li>
+            <li>Métriques de monitoring détaillées</li>
+          </ul>
+        </CardBody>
+      </Card>
 
       <Card>
         <CardHeader
@@ -50,10 +83,16 @@ export default function ReportsPage() {
         />
         <CardBody className="overflow-x-auto p-0">
           {loading ? (
-            <div className="px-6 py-10 text-sm text-slate-400">Chargement...</div>
+            <div className="px-6 py-10 text-sm text-muted">Chargement...</div>
+          ) : reports.length === 0 ? (
+            <EmptyState
+              icon={Download}
+              title="Aucun rapport disponible"
+              description="Lancez une simulation puis une évaluation SLA depuis Administration pour générer des rapports."
+            />
           ) : (
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-left text-slate-500">
+              <thead className="table-head">
                 <tr>
                   <th className="px-6 py-4 font-medium">ID</th>
                   <th className="px-6 py-4 font-medium">SLA</th>
@@ -61,30 +100,36 @@ export default function ReportsPage() {
                   <th className="px-6 py-4 font-medium">Période</th>
                   <th className="px-6 py-4 font-medium">Format</th>
                   <th className="px-6 py-4 font-medium">Généré le</th>
-                  <th className="px-6 py-4 font-medium">Export</th>
+                  <th className="px-6 py-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {reports.map((report) => (
-                  <tr key={report.id} className="border-t border-slate-100 hover:bg-slate-50/70">
-                    <td className="px-6 py-4 text-slate-500">#{report.id}</td>
-                    <td className="px-6 py-4 font-medium text-slate-900">
+                  <tr key={report.id} className="table-row">
+                    <td className="px-6 py-4 text-muted">#{report.id}</td>
+                    <td className="px-6 py-4 font-medium text-heading">
                       SLA #{report.slaId}
                     </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {formatScore(report.slaResult)}
+                    <td className="px-6 py-4">
+                      <span className="font-semibold text-heading">
+                        {formatScore(report.slaResult)}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-600">
+                    <td className="px-6 py-4 text-body">
                       {formatDate(report.periodStart)}
-                      <span className="mx-1 text-slate-300">→</span>
+                      <span className="mx-1 text-muted">→</span>
                       {formatDate(report.periodEnd)}
                     </td>
-                    <td className="px-6 py-4 text-slate-600">{report.format}</td>
-                    <td className="px-6 py-4 text-slate-500">
+                    <td className="px-6 py-4">
+                      <span className="rounded-lg bg-card/60 px-2.5 py-1 text-xs font-semibold text-body ring-1 ring-border/60">
+                        {report.format}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-muted">
                       {formatDate(report.generatedAt)}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           variant="secondary"
                           loading={downloadingId === `${report.id}-pdf`}
@@ -101,20 +146,17 @@ export default function ReportsPage() {
                           <FileSpreadsheet className="h-4 w-4" />
                           CSV
                         </Button>
+                        {isAdmin && (
+                          <Button variant="danger" onClick={() => handleDelete(report)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
-          {!loading && reports.length === 0 && (
-            <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
-              <Download className="h-8 w-8 text-slate-300" />
-              <p className="text-sm text-slate-400">
-                Aucun rapport disponible. Lancez une évaluation SLA pour en générer.
-              </p>
-            </div>
           )}
         </CardBody>
       </Card>

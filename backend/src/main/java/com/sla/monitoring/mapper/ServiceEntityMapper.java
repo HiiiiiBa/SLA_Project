@@ -12,6 +12,7 @@ import org.mapstruct.MappingTarget;
 public interface ServiceEntityMapper {
 
     @Mapping(target = "slaId", source = "sla.id")
+    @Mapping(target = "slaName", source = "sla.name")
     ServiceEntityResponse toResponse(Service service);
 
     @Mapping(target = "id", ignore = true)

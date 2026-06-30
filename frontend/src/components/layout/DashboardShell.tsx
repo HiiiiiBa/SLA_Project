@@ -1,52 +1,58 @@
 "use client";
 
 import { useState } from "react";
-import { Activity, Menu, Moon, Sun, X } from "lucide-react";
+import { Activity, Menu, X } from "lucide-react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { useTheme } from "@/context/ThemeContext";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { NotificationProvider } from "@/context/NotificationContext";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
 
   return (
     <AuthGuard>
-      <div className="page-shell">
-        <div className="sticky top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900 lg:hidden">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-white">
-              <Activity className="h-4 w-4" />
+      <NotificationProvider>
+        <div className="page-shell">
+        {/* Mobile header */}
+        <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-card/80 backdrop-blur-md px-4 py-3 lg:hidden">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
+              <Activity className="h-5 w-5 text-white" />
             </div>
-            <span className="font-semibold text-heading">SLA Monitor</span>
+            <span className="font-bold text-heading">SLA Monitor</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={toggleTheme}
-              className="rounded-xl border border-slate-200 p-2 text-slate-600 dark:border-slate-700 dark:text-slate-300"
-            >
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
+            <NotificationBell />
+            <ThemeToggle variant="icon" />
             <button
               onClick={() => setMobileOpen((open) => !open)}
-              className="rounded-xl border border-slate-200 p-2 text-slate-600 dark:border-slate-700 dark:text-slate-300"
-              aria-label="Menu"
+              className="rounded-lg border border-border bg-card/50 p-2 text-muted hover:text-foreground transition-colors"
+              aria-label="Toggle menu"
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
+        {/* Sidebar */}
         <div className={`${mobileOpen ? "block" : "hidden"} lg:block`}>
           <Sidebar onNavigate={() => setMobileOpen(false)} />
         </div>
 
+        {/* Main content */}
         <main className="lg:pl-72">
-          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <div className="hidden lg:flex sticky top-0 z-20 items-center justify-end gap-2 border-b border-border/50 bg-card/50 px-8 py-3 backdrop-blur-md">
+            <NotificationBell />
+            <ThemeToggle variant="icon" />
+          </div>
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 animate-fade-in">
             {children}
           </div>
         </main>
-      </div>
+        </div>
+      </NotificationProvider>
     </AuthGuard>
   );
 }

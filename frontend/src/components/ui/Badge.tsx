@@ -1,17 +1,41 @@
 import { cn } from "@/lib/utils";
-import type { AlertStatus, SlaStatus } from "@/types";
+import type { AlertStatus, IncidentSeverity, ServiceStatus, SlaStatus } from "@/types";
+
+const badgeBase =
+  "inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide";
 
 const slaStyles: Record<SlaStatus, string> = {
-  ACTIVE: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  WARNING: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  BREACHED: "bg-red-50 text-red-700 ring-red-600/20",
-  ARCHIVED: "bg-slate-100 text-slate-600 ring-slate-500/20",
+  ACTIVE: "bg-success/15 text-success border border-success/30 shadow-sm",
+  INACTIVE: "bg-muted/20 text-muted border border-muted/40 shadow-sm",
+  WARNING: "bg-warning/15 text-warning border border-warning/30 shadow-sm",
+  BREACHED: "bg-error/15 text-error border border-error/30 shadow-sm",
+  ARCHIVED: "bg-muted/15 text-muted border border-muted/30 shadow-sm",
+};
+
+const slaLabels: Record<SlaStatus, string> = {
+  ACTIVE: "Actif",
+  INACTIVE: "Inactif",
+  WARNING: "Alerte",
+  BREACHED: "Violé",
+  ARCHIVED: "Archivé",
 };
 
 const alertStyles: Record<AlertStatus, string> = {
-  NEW: "bg-blue-50 text-blue-700 ring-blue-600/20",
-  READ: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  RESOLVED: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+  NEW: "bg-primary/15 text-primary border border-primary/30 shadow-sm",
+  READ: "bg-warning/15 text-warning border border-warning/30 shadow-sm",
+  RESOLVED: "bg-success/15 text-success border border-success/30 shadow-sm",
+};
+
+const serviceStyles: Record<ServiceStatus, string> = {
+  UP: "bg-success/15 text-success border border-success/30 shadow-sm",
+  DOWN: "bg-error/15 text-error border border-error/30 shadow-sm",
+};
+
+const severityStyles: Record<IncidentSeverity, string> = {
+  LOW: "bg-primary/15 text-primary border border-primary/30 shadow-sm",
+  MEDIUM: "bg-warning/15 text-warning border border-warning/30 shadow-sm",
+  HIGH: "bg-error/15 text-error border border-error/30 shadow-sm",
+  CRITICAL: "bg-error/20 text-error border border-error/40 shadow-sm ring-1 ring-error/20",
 };
 
 export function StatusBadge({
@@ -27,13 +51,24 @@ export function StatusBadge({
       : slaStyles[status as SlaStatus];
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset",
-        styles,
-      )}
-    >
+    <span className={cn(badgeBase, styles)}>
+      {kind === "sla" ? slaLabels[status as SlaStatus] ?? status : status}
+    </span>
+  );
+}
+
+export function ServiceStatusBadge({ status }: { status: ServiceStatus }) {
+  return (
+    <span className={cn(badgeBase, serviceStyles[status])}>
       {status}
+    </span>
+  );
+}
+
+export function SeverityBadge({ severity }: { severity: IncidentSeverity }) {
+  return (
+    <span className={cn(badgeBase, severityStyles[severity])}>
+      {severity}
     </span>
   );
 }

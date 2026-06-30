@@ -39,32 +39,32 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
-        className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-md"
         onClick={onClose}
         aria-label="Fermer"
       />
       <div
         className={cn(
-          "relative z-10 w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900",
+          "relative z-10 w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl shadow-black/40",
           className,
         )}
       >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+            <h2 className="text-xl font-bold text-foreground">
               {title}
             </h2>
             {description && (
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-muted">
                 {description}
               </p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+            className="rounded-lg border border-border p-2 text-muted hover:text-foreground hover:bg-card/50 transition-colors"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
         {children}

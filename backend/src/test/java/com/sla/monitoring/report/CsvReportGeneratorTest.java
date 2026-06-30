@@ -102,6 +102,7 @@ class CsvReportGeneratorTest {
                 .evaluation(evaluation)
                 .metrics(metrics)
                 .incidents(incidents)
+                .alerts(List.of())
                 .build();
     }
 

@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Server, Trash2 } from "lucide-react";
 import { ServiceFormModal } from "@/components/forms/ServiceFormModal";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
+import { ServiceStatusBadge } from "@/components/ui/Badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, apiFetch } from "@/lib/api";
@@ -91,17 +93,11 @@ export default function ServicesPage() {
                   <tr key={service.id} className="table-row">
                     <td className="px-6 py-4 font-medium text-heading">{service.name}</td>
                     <td className="px-6 py-4">
-                      <span
-                        className={
-                          service.status === "UP"
-                            ? "rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-600/20 dark:bg-emerald-950 dark:text-emerald-300"
-                            : "rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-red-600/20 dark:bg-red-950 dark:text-red-300"
-                        }
-                      >
-                        {service.status}
-                      </span>
+                      <ServiceStatusBadge status={service.status} />
                     </td>
-                    <td className="px-6 py-4 text-body">#{service.slaId}</td>
+                    <td className="px-6 py-4 text-body">
+                      {service.slaName ?? `SLA #${service.slaId}`}
+                    </td>
                     <td className="px-6 py-4 text-muted">{formatDate(service.updatedAt)}</td>
                     {isAdmin && (
                       <td className="px-6 py-4">
@@ -127,10 +123,11 @@ export default function ServicesPage() {
             </table>
           )}
           {!loading && services.length === 0 && (
-            <div className="px-6 py-10 text-sm text-muted">
-              Aucun service. Redémarrez le backend en dev pour charger les données démo,
-              ou créez-en un manuellement.
-            </div>
+            <EmptyState
+              icon={Server}
+              title="Aucun service monitoré"
+              description="Les services alimentent les métriques et graphiques. Redémarrez le backend en dev pour charger les données démo, ou créez un service manuellement."
+            />
           )}
         </CardBody>
       </Card>

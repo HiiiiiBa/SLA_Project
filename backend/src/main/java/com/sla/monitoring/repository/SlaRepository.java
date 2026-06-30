@@ -5,6 +5,9 @@ import com.sla.monitoring.entity.enums.SlaStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 
 @Repository
@@ -15,4 +18,13 @@ public interface SlaRepository extends JpaRepository<Sla, Long> {
     List<Sla> findByStatus(SlaStatus status);
 
     List<Sla> findByStatusNot(SlaStatus status);
+
+    @Query("SELECT s FROM Sla s JOIN FETCH s.client ORDER BY s.name ASC")
+    List<Sla> findAllWithClient();
+
+    @Query("SELECT s FROM Sla s JOIN FETCH s.client WHERE s.client.id = :clientId ORDER BY s.name ASC")
+    List<Sla> findByClientIdWithClient(@Param("clientId") Long clientId);
+
+    @Query("SELECT s FROM Sla s JOIN FETCH s.client WHERE s.id = :id")
+    java.util.Optional<Sla> findByIdWithClient(@Param("id") Long id);
 }

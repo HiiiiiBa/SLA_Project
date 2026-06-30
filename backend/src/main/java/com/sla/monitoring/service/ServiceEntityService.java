@@ -15,7 +15,9 @@ public interface ServiceEntityService {
 
     void deleteService(Long id);
 
-    List<ServiceEntityResponse> findAll();
+    List<ServiceEntityResponse> findAll(Long slaId);
+
+    List<ServiceEntityResponse> findBySlaId(Long slaId);
 
     ServiceEntityResponse findById(Long id);
 

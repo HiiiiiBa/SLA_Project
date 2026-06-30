@@ -21,6 +21,8 @@ public class SlaResponse {
     private Integer responseTimeLimit;
     private Double errorRateLimit;
     private Long clientId;
+    private String clientName;
+    private Integer serviceCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

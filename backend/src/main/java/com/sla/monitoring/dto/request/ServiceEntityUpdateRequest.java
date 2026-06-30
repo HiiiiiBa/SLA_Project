@@ -19,4 +19,6 @@ public class ServiceEntityUpdateRequest {
 
     @NotNull(message = "Status is required")
     private ServiceStatus status;
+
+    private Long slaId;
 }

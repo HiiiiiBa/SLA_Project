@@ -4,18 +4,14 @@ import com.sla.monitoring.config.SlaEngineProperties;
 import com.sla.monitoring.dto.response.SlaEvaluationResponse;
 import com.sla.monitoring.engine.SlaCalculator;
 import com.sla.monitoring.engine.model.SlaEvaluationResult;
-import com.sla.monitoring.entity.Alert;
+import com.sla.monitoring.alert.AutomaticAlertService;
 import com.sla.monitoring.entity.Incident;
 import com.sla.monitoring.entity.MonitoringMetric;
 import com.sla.monitoring.entity.Report;
 import com.sla.monitoring.entity.Sla;
-import com.sla.monitoring.entity.enums.AlertStatus;
-import com.sla.monitoring.entity.enums.AlertType;
 import com.sla.monitoring.entity.enums.ReportFormat;
 import com.sla.monitoring.entity.enums.SlaStatus;
 import com.sla.monitoring.exception.ResourceNotFoundException;
-import com.sla.monitoring.notification.AlertNotificationService;
-import com.sla.monitoring.repository.AlertRepository;
 import com.sla.monitoring.repository.IncidentRepository;
 import com.sla.monitoring.repository.MonitoringMetricRepository;
 import com.sla.monitoring.repository.ReportRepository;
@@ -41,16 +37,17 @@ public class SlaEngineServiceImpl implements SlaEngineService {
     private final SlaRepository slaRepository;
     private final MonitoringMetricRepository monitoringMetricRepository;
     private final IncidentRepository incidentRepository;
-    private final AlertRepository alertRepository;
     private final ReportRepository reportRepository;
-    private final AlertNotificationService alertNotificationService;
+    private final AutomaticAlertService automaticAlertService;
     private final SlaCalculator slaCalculator;
     private final SlaEngineProperties slaEngineProperties;
 
     @Override
     @Transactional
     public List<SlaEvaluationResponse> evaluateAll() {
-        List<Sla> slas = slaRepository.findByStatusNot(SlaStatus.ARCHIVED);
+        List<Sla> slas = slaRepository.findByStatusNot(SlaStatus.ARCHIVED).stream()
+                .filter(sla -> sla.getStatus() != SlaStatus.INACTIVE)
+                .toList();
         log.info("Starting SLA evaluation for {} contract(s)", slas.size());
 
         return slas.stream()
@@ -63,7 +60,7 @@ public class SlaEngineServiceImpl implements SlaEngineService {
     @Transactional
     public SlaEvaluationResponse evaluateById(Long slaId) {
         Sla sla = findSlaById(slaId);
-        if (sla.getStatus() == SlaStatus.ARCHIVED) {
+        if (sla.getStatus() == SlaStatus.ARCHIVED || sla.getStatus() == SlaStatus.INACTIVE) {
             throw new ResourceNotFoundException("Active SLA", "id", slaId);
         }
         return toResponse(evaluateSla(sla));
@@ -89,10 +86,8 @@ public class SlaEngineServiceImpl implements SlaEngineService {
         }
 
         boolean alertCreated = false;
-        if (slaEngineProperties.isAutoCreateAlerts() && shouldCreateAlert(result)) {
-            Alert savedAlert = alertRepository.save(buildAlert(sla, result));
-            alertNotificationService.dispatch(savedAlert.getId());
-            alertCreated = true;
+        if (slaEngineProperties.isAutoCreateAlerts()) {
+            alertCreated = automaticAlertService.createAlertsFromEvaluation(sla, result);
         }
 
         boolean reportCreated = false;
@@ -118,33 +113,6 @@ public class SlaEngineServiceImpl implements SlaEngineService {
                 .alertCreated(alertCreated)
                 .reportCreated(reportCreated)
                 .build();
-    }
-
-    private boolean shouldCreateAlert(SlaEvaluationResult result) {
-        return result.isStatusChanged()
-                && (result.getCurrentStatus() == SlaStatus.WARNING
-                || result.getCurrentStatus() == SlaStatus.BREACHED);
-    }
-
-    private Alert buildAlert(Sla sla, SlaEvaluationResult result) {
-        return Alert.builder()
-                .type(AlertType.WEB)
-                .message(buildAlertMessage(result))
-                .status(AlertStatus.NEW)
-                .sla(sla)
-                .build();
-    }
-
-    private String buildAlertMessage(SlaEvaluationResult result) {
-        return String.format(
-                "SLA '%s' status changed to %s. Uptime: %.2f%%, avg response: %.2f ms, avg error rate: %.2f%%, score: %.2f",
-                result.getSlaName(),
-                result.getCurrentStatus(),
-                result.getUptimePercentage(),
-                result.getAverageResponseTime(),
-                result.getAverageErrorRate(),
-                result.getSlaScore()
-        );
     }
 
     private boolean createReportIfAbsent(Sla sla, SlaEvaluationResult result) {

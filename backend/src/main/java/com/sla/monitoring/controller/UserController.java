@@ -2,6 +2,7 @@ package com.sla.monitoring.controller;
 
 import com.sla.monitoring.dto.ApiResponse;
 import com.sla.monitoring.dto.request.UserCreateRequest;
+import com.sla.monitoring.dto.request.UserResetPasswordRequest;
 import com.sla.monitoring.dto.request.UserUpdateRequest;
 import com.sla.monitoring.dto.response.UserResponse;
 import com.sla.monitoring.service.UserService;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -69,6 +71,27 @@ public class UserController {
             @Valid @RequestBody UserUpdateRequest request) {
         UserResponse response = userService.updateUser(id, request);
         return ResponseEntity.ok(ApiResponse.success("User updated successfully", response));
+    }
+
+    @PatchMapping("/{id}/activate")
+    @Operation(summary = "Activate a user account")
+    public ResponseEntity<ApiResponse<UserResponse>> activate(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("User activated successfully", userService.activateUser(id)));
+    }
+
+    @PatchMapping("/{id}/deactivate")
+    @Operation(summary = "Deactivate a user account")
+    public ResponseEntity<ApiResponse<UserResponse>> deactivate(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("User deactivated successfully", userService.deactivateUser(id)));
+    }
+
+    @PatchMapping("/{id}/reset-password")
+    @Operation(summary = "Reset user password")
+    public ResponseEntity<ApiResponse<UserResponse>> resetPassword(
+            @PathVariable Long id,
+            @Valid @RequestBody UserResetPasswordRequest request) {
+        UserResponse response = userService.resetPassword(id, request.getPassword());
+        return ResponseEntity.ok(ApiResponse.success("Password reset successfully", response));
     }
 
     @DeleteMapping("/{id}")

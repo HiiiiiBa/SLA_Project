@@ -16,9 +16,11 @@ public interface SlaService {
 
     SlaResponse activateSLA(Long id);
 
+    SlaResponse deactivateSLA(Long id);
+
     void deleteSLA(Long id);
 
-    List<SlaResponse> getAll();
+    List<SlaResponse> getAll(Long clientId);
 
     SlaResponse getById(Long id);
 }

@@ -81,7 +81,7 @@ public class MetricSimulationServiceImpl implements MetricSimulationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Service", "id", serviceId));
 
         Sla sla = service.getSla();
-        if (sla.getStatus() == SlaStatus.ARCHIVED) {
+        if (sla.getStatus() == SlaStatus.ARCHIVED || sla.getStatus() == SlaStatus.INACTIVE) {
             throw new ResourceNotFoundException("Active SLA", "id", sla.getId());
         }
 
@@ -126,7 +126,7 @@ public class MetricSimulationServiceImpl implements MetricSimulationService {
         Sla sla = slaRepository.findById(slaId)
                 .orElseThrow(() -> new ResourceNotFoundException("SLA", "id", slaId));
 
-        if (sla.getStatus() == SlaStatus.ARCHIVED) {
+        if (sla.getStatus() == SlaStatus.ARCHIVED || sla.getStatus() == SlaStatus.INACTIVE) {
             throw new ResourceNotFoundException("Active SLA", "id", slaId);
         }
         return sla;

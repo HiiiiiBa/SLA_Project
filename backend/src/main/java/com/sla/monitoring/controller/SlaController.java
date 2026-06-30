@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.bind.annotation.RequestParam;
+
 import java.util.List;
 
 /**
@@ -38,8 +40,9 @@ public class SlaController {
 
     @GetMapping
     @Operation(summary = "Get all SLAs")
-    public ResponseEntity<ApiResponse<List<SlaResponse>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.success(slaService.getAll()));
+    public ResponseEntity<ApiResponse<List<SlaResponse>>> getAll(
+            @RequestParam(required = false) Long clientId) {
+        return ResponseEntity.ok(ApiResponse.success(slaService.getAll(clientId)));
     }
 
     @GetMapping("/{id}")
@@ -78,6 +81,13 @@ public class SlaController {
     public ResponseEntity<ApiResponse<SlaResponse>> activate(@PathVariable Long id) {
         SlaResponse response = slaService.activateSLA(id);
         return ResponseEntity.ok(ApiResponse.success("SLA activated successfully", response));
+    }
+
+    @PatchMapping("/{id}/deactivate")
+    @Operation(summary = "Deactivate an SLA")
+    public ResponseEntity<ApiResponse<SlaResponse>> deactivate(@PathVariable Long id) {
+        SlaResponse response = slaService.deactivateSLA(id);
+        return ResponseEntity.ok(ApiResponse.success("SLA deactivated successfully", response));
     }
 
     @DeleteMapping("/{id}")

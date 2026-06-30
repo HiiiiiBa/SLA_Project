@@ -18,6 +18,7 @@ public class ServiceEntityResponse {
     private String name;
     private ServiceStatus status;
     private Long slaId;
+    private String slaName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

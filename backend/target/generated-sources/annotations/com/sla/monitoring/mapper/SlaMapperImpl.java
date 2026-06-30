@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-06-30T09:44:31+0100",
+    date = "2026-06-30T12:04:44+0100",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.10 (Oracle Corporation)"
 )
 @Component
@@ -25,6 +25,7 @@ public class SlaMapperImpl implements SlaMapper {
         SlaResponse.SlaResponseBuilder slaResponse = SlaResponse.builder();
 
         slaResponse.clientId( slaClientId( sla ) );
+        slaResponse.clientName( slaClientName( sla ) );
         slaResponse.id( sla.getId() );
         slaResponse.name( sla.getName() );
         slaResponse.status( sla.getStatus() );
@@ -72,5 +73,13 @@ public class SlaMapperImpl implements SlaMapper {
             return null;
         }
         return client.getId();
+    }
+
+    private String slaClientName(Sla sla) {
+        Client client = sla.getClient();
+        if ( client == null ) {
+            return null;
+        }
+        return client.getName();
     }
 }

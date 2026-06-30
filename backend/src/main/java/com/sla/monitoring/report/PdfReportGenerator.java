@@ -11,6 +11,7 @@ import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import com.sla.monitoring.entity.Alert;
 import com.sla.monitoring.entity.Incident;
 import com.sla.monitoring.entity.MonitoringMetric;
 import com.sla.monitoring.entity.Report;
@@ -48,9 +49,11 @@ public class PdfReportGenerator implements ReportGenerator {
             document.open();
 
             addTitle(document, data);
+            addGlobalPerformanceSection(document, data);
             addSummarySection(document, data);
             addMetricsSection(document, data.getMetrics());
             addIncidentsSection(document, data.getIncidents());
+            addAlertsSection(document, data.getAlerts());
 
             document.close();
 
@@ -77,8 +80,69 @@ public class PdfReportGenerator implements ReportGenerator {
         document.add(new Paragraph(" ", NORMAL_FONT));
     }
 
+    private void addGlobalPerformanceSection(Document document, ReportExportData data) throws DocumentException {
+        document.add(new Paragraph("Performance globale", SECTION_FONT));
+
+        SlaEvaluationResult evaluation = data.getEvaluation();
+        Sla sla = data.getSla();
+
+        PdfPTable table = new PdfPTable(2);
+        table.setWidthPercentage(100);
+        table.setSpacingBefore(8);
+        table.setSpacingAfter(16);
+
+        addRow(table, "Statut SLA", evaluation.getCurrentStatus().name());
+        addRow(table, "Score global", formatNumber(evaluation.getSlaScore()) + " / 100");
+        addRow(table, "Uptime réalisé", formatNumber(evaluation.getUptimePercentage()) + "% (cible "
+                + formatNumber(sla.getUptimeTarget()) + "%)");
+        addRow(table, "Conformité temps réponse", formatNumber(evaluation.getResponseTimeCompliance()) + "%");
+        addRow(table, "Taux d'erreur moyen", formatNumber(evaluation.getAverageErrorRate()) + "%");
+        addRow(table, "Incidents sur la période", String.valueOf(data.getIncidents().size()));
+        addRow(table, "Alertes sur la période", String.valueOf(data.getAlerts().size()));
+        addRow(table, "Verdict", globalVerdict(evaluation));
+
+        document.add(table);
+    }
+
+    private String globalVerdict(SlaEvaluationResult evaluation) {
+        return switch (evaluation.getCurrentStatus()) {
+            case ACTIVE -> "Conforme — objectifs SLA respectés";
+            case WARNING -> "Attention — dérives détectées, surveillance requise";
+            case BREACHED -> "Non conforme — SLA violé";
+            case INACTIVE -> "Inactif — hors périmètre de monitoring";
+            case ARCHIVED -> "Archivé — contrat clos";
+        };
+    }
+
+    private void addAlertsSection(Document document, List<Alert> alerts) throws DocumentException {
+        document.add(new Paragraph("Alertes", SECTION_FONT));
+
+        if (alerts.isEmpty()) {
+            document.add(new Paragraph("Aucune alerte sur cette période.", NORMAL_FONT));
+            return;
+        }
+
+        PdfPTable table = new PdfPTable(4);
+        table.setWidthPercentage(100);
+        table.setSpacingBefore(8);
+
+        addHeader(table, "Date");
+        addHeader(table, "Type");
+        addHeader(table, "Statut");
+        addHeader(table, "Message");
+
+        for (Alert alert : alerts) {
+            addCell(table, formatDateTime(alert.getCreatedAt()));
+            addCell(table, alert.getType().name());
+            addCell(table, alert.getStatus().name());
+            addCell(table, alert.getMessage());
+        }
+
+        document.add(table);
+    }
+
     private void addSummarySection(Document document, ReportExportData data) throws DocumentException {
-        document.add(new Paragraph("Summary", SECTION_FONT));
+        document.add(new Paragraph("Détails du contrat", SECTION_FONT));
 
         Sla sla = data.getSla();
         SlaEvaluationResult evaluation = data.getEvaluation();

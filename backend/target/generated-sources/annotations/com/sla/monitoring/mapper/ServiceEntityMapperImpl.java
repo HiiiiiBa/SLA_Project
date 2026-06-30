@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-06-30T09:44:30+0100",
+    date = "2026-06-30T12:04:44+0100",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.10 (Oracle Corporation)"
 )
 @Component
@@ -25,6 +25,7 @@ public class ServiceEntityMapperImpl implements ServiceEntityMapper {
         ServiceEntityResponse.ServiceEntityResponseBuilder serviceEntityResponse = ServiceEntityResponse.builder();
 
         serviceEntityResponse.slaId( serviceSlaId( service ) );
+        serviceEntityResponse.slaName( serviceSlaName( service ) );
         serviceEntityResponse.id( service.getId() );
         serviceEntityResponse.name( service.getName() );
         serviceEntityResponse.status( service.getStatus() );
@@ -64,5 +65,13 @@ public class ServiceEntityMapperImpl implements ServiceEntityMapper {
             return null;
         }
         return sla.getId();
+    }
+
+    private String serviceSlaName(Service service) {
+        Sla sla = service.getSla();
+        if ( sla == null ) {
+            return null;
+        }
+        return sla.getName();
     }
 }

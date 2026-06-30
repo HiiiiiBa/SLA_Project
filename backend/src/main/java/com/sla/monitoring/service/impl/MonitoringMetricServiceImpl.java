@@ -2,9 +2,11 @@ package com.sla.monitoring.service.impl;
 
 import com.sla.monitoring.dto.request.MonitoringMetricCreateRequest;
 import com.sla.monitoring.dto.response.MonitoringMetricResponse;
+import com.sla.monitoring.alert.AutomaticAlertService;
 import com.sla.monitoring.entity.MonitoringMetric;
 import com.sla.monitoring.entity.Service;
 import com.sla.monitoring.entity.Sla;
+import com.sla.monitoring.entity.enums.MetricStatus;
 import com.sla.monitoring.exception.BusinessException;
 import com.sla.monitoring.exception.ResourceNotFoundException;
 import com.sla.monitoring.mapper.MonitoringMetricMapper;
@@ -27,6 +29,7 @@ public class MonitoringMetricServiceImpl implements MonitoringMetricService {
     private final ServiceRepository serviceRepository;
     private final SlaRepository slaRepository;
     private final MonitoringMetricMapper monitoringMetricMapper;
+    private final AutomaticAlertService automaticAlertService;
 
     @Override
     @Transactional
@@ -42,7 +45,19 @@ public class MonitoringMetricServiceImpl implements MonitoringMetricService {
         metric.setService(service);
         metric.setSla(sla);
 
-        return monitoringMetricMapper.toResponse(monitoringMetricRepository.save(metric));
+        MonitoringMetric saved = monitoringMetricRepository.save(metric);
+        triggerAutomaticAlerts(saved, service, sla);
+
+        return monitoringMetricMapper.toResponse(saved);
+    }
+
+    private void triggerAutomaticAlerts(MonitoringMetric metric, Service service, Sla sla) {
+        if (metric.getStatus() == MetricStatus.DOWN) {
+            automaticAlertService.createServiceDownAlert(service, sla);
+        }
+        if (metric.getErrorRate() > sla.getErrorRateLimit()) {
+            automaticAlertService.createHighErrorRateAlert(service, sla, metric.getErrorRate());
+        }
     }
 
     @Override

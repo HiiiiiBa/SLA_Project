@@ -5,34 +5,35 @@ export function StatCard({
   value,
   hint,
   icon,
-  accent = "emerald",
+  accent = "blue",
 }: {
   title: string;
   value: string | number;
   hint?: string;
   icon: React.ReactNode;
-  accent?: "emerald" | "blue" | "amber" | "red";
+  accent?: "emerald" | "blue" | "amber" | "red" | "cyan";
 }) {
   const accents = {
-    emerald: "from-emerald-500/10 to-emerald-500/5 text-emerald-600",
-    blue: "from-blue-500/10 to-blue-500/5 text-blue-600",
-    amber: "from-amber-500/10 to-amber-500/5 text-amber-600",
-    red: "from-red-500/10 to-red-500/5 text-red-600",
+    emerald: "from-success/20 to-success/5 text-success",
+    blue: "from-primary/20 to-primary/5 text-primary",
+    cyan: "from-accent/20 to-accent/5 text-accent",
+    amber: "from-warning/20 to-warning/5 text-warning",
+    red: "from-error/20 to-error/5 text-error",
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div className="surface-card surface-card-interactive p-6 hover:scale-[1.02] transform transition-all duration-300">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-muted">{title}</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-heading">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted">{title}</p>
+          <p className="mt-3 text-4xl font-bold tracking-tight text-foreground">
             {value}
           </p>
-          {hint && <p className="mt-2 text-sm text-slate-400">{hint}</p>}
+          {hint && <p className="mt-2 text-xs text-muted">{hint}</p>}
         </div>
         <div
           className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br",
+            "flex h-14 w-14 items-center justify-center rounded-lg bg-gradient-to-br shadow-lg",
             accents[accent],
           )}
         >

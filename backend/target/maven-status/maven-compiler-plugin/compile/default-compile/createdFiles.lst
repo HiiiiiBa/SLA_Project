@@ -16,6 +16,7 @@ com\sla\monitoring\controller\MetricSimulationController.class
 com\sla\monitoring\audit\package-info.class
 com\sla\monitoring\dto\response\ReportResponse.class
 com\sla\monitoring\config\SlaEngineProperties.class
+com\sla\monitoring\dto\request\UserResetPasswordRequest.class
 com\sla\monitoring\dto\request\SlaCreateRequest.class
 com\sla\monitoring\dto\request\AlertCreateRequest$AlertCreateRequestBuilder.class
 com\sla\monitoring\mapper\SlaMapper.class
@@ -30,6 +31,8 @@ com\sla\monitoring\security\filter\JwtAuthenticationFilter.class
 com\sla\monitoring\dto\ApiResponse.class
 com\sla\monitoring\config\ValidationConfig.class
 com\sla\monitoring\dto\request\RegisterRequest$RegisterRequestBuilder.class
+com\sla\monitoring\controller\NotificationController.class
+com\sla\monitoring\service\NotificationService.class
 com\sla\monitoring\config\AsyncConfig.class
 com\sla\monitoring\service\SlaEngineService.class
 com\sla\monitoring\dto\response\ServiceEntityResponse.class
@@ -42,9 +45,12 @@ com\sla\monitoring\report\PdfReportGenerator.class
 com\sla\monitoring\dto\request\IncidentUpdateRequest.class
 com\sla\monitoring\controller\IncidentController.class
 com\sla\monitoring\mapper\UserMapperImpl.class
+com\sla\monitoring\dto\request\UserResetPasswordRequest$UserResetPasswordRequestBuilder.class
 com\sla\monitoring\exception\AuthenticationException.class
 com\sla\monitoring\repository\ClientRepository.class
+com\sla\monitoring\config\DemoRichContentSeeder$ServiceDef.class
 com\sla\monitoring\dto\response\UserResponse$UserResponseBuilder.class
+com\sla\monitoring\entity\Notification$NotificationBuilder.class
 com\sla\monitoring\repository\AlertRepository.class
 com\sla\monitoring\entity\Alert$AlertBuilder.class
 com\sla\monitoring\exception\UnauthorizedException.class
@@ -67,6 +73,7 @@ com\sla\monitoring\mapper\AlertMapperImpl.class
 com\sla\monitoring\mapper\ClientMapper.class
 com\sla\monitoring\dto\response\SlaEvaluationResponse$SlaEvaluationResponseBuilder.class
 com\sla\monitoring\entity\Sla$SlaBuilder.class
+com\sla\monitoring\config\DemoRichContentSeeder.class
 com\sla\monitoring\mapper\ServiceEntityMapper.class
 com\sla\monitoring\mapper\AlertMapper.class
 com\sla\monitoring\entity\enums\IncidentSeverity.class
@@ -76,11 +83,15 @@ com\sla\monitoring\dto\request\ClientCreateRequest.class
 com\sla\monitoring\service\impl\ReportServiceImpl.class
 com\sla\monitoring\entity\Report.class
 com\sla\monitoring\mapper\SlaMapperImpl.class
+com\sla\monitoring\dto\response\NotificationResponse$NotificationResponseBuilder.class
 com\sla\monitoring\scheduler\SlaCalculationScheduler.class
 com\sla\monitoring\security\handler\JwtAccessDeniedHandler.class
 com\sla\monitoring\config\MetricSimulationProperties.class
 com\sla\monitoring\dto\response\IncidentResponse.class
 com\sla\monitoring\entity\User$UserBuilder.class
+com\sla\monitoring\entity\enums\NotificationStatus.class
+com\sla\monitoring\entity\enums\NotificationChannel.class
+com\sla\monitoring\repository\NotificationRepository.class
 com\sla\monitoring\dto\request\RefreshTokenRequest.class
 com\sla\monitoring\mapper\ReportMapperImpl.class
 com\sla\monitoring\service\AuthService.class
@@ -97,6 +108,7 @@ com\sla\monitoring\entity\Report$ReportBuilder.class
 com\sla\monitoring\dto\request\UserUpdateRequest.class
 com\sla\monitoring\dto\request\ServiceEntityCreateRequest$ServiceEntityCreateRequestBuilder.class
 com\sla\monitoring\entity\enums\SlaStatus.class
+com\sla\monitoring\dto\response\ClientPortfolioResponse.class
 com\sla\monitoring\dto\response\AlertResponse.class
 com\sla\monitoring\config\OpenApiConfig.class
 com\sla\monitoring\dto\request\IncidentUpdateRequest$IncidentUpdateRequestBuilder.class
@@ -117,9 +129,11 @@ com\sla\monitoring\dto\request\ServiceEntityUpdateRequest$ServiceEntityUpdateReq
 com\sla\monitoring\controller\UserController.class
 com\sla\monitoring\service\SlaService.class
 com\sla\monitoring\dto\response\IncidentResponse$IncidentResponseBuilder.class
+com\sla\monitoring\dto\response\NotificationResponse.class
 com\sla\monitoring\entity\enums\AlertStatus.class
 com\sla\monitoring\config\DemoDataProperties.class
 com\sla\monitoring\config\CorsConfig.class
+com\sla\monitoring\dto\response\SlaWithServicesResponse$SlaWithServicesResponseBuilder.class
 com\sla\monitoring\dto\request\SlaUpdateRequest.class
 com\sla\monitoring\report\model\ReportExportData$ReportExportDataBuilder.class
 com\sla\monitoring\entity\enums\AlertType.class
@@ -127,14 +141,18 @@ com\sla\monitoring\config\AlertNotificationProperties.class
 com\sla\monitoring\service\impl\UserServiceImpl.class
 com\sla\monitoring\controller\ReportController.class
 com\sla\monitoring\notification\AlertNotificationServiceImpl.class
+com\sla\monitoring\config\DemoRichContentSeeder$MetricProfile.class
 com\sla\monitoring\notification\AlertNotificationService.class
 com\sla\monitoring\service\ReportService.class
+com\sla\monitoring\config\DemoRichContentSeeder$1.class
 com\sla\monitoring\dto\request\LoginRequest$LoginRequestBuilder.class
 com\sla\monitoring\report\model\ReportExportResult.class
 com\sla\monitoring\config\DataSeeder.class
 com\sla\monitoring\exception\ExpiredTokenException.class
 com\sla\monitoring\entity\Incident$IncidentBuilder.class
 com\sla\monitoring\entity\Client$ClientBuilder.class
+com\sla\monitoring\service\impl\NotificationServiceImpl.class
+com\sla\monitoring\alert\AutomaticAlertService.class
 com\sla\monitoring\mapper\ClientMapperImpl.class
 com\sla\monitoring\mapper\ReportMapper.class
 com\sla\monitoring\security\jwt\JwtService.class
@@ -145,6 +163,7 @@ com\sla\monitoring\entity\RefreshToken$RefreshTokenBuilder.class
 com\sla\monitoring\service\impl\MetricSimulationServiceImpl.class
 com\sla\monitoring\dto\request\LoginRequest.class
 com\sla\monitoring\dto\response\SlaEvaluationResponse.class
+com\sla\monitoring\report\CsvReportGenerator$1.class
 com\sla\monitoring\controller\SlaEngineController.class
 com\sla\monitoring\dto\request\IncidentCreateRequest$IncidentCreateRequestBuilder.class
 com\sla\monitoring\mapper\IncidentMapper.class
@@ -155,6 +174,7 @@ com\sla\monitoring\entity\enums\MetricStatus.class
 com\sla\monitoring\repository\ReportRepository.class
 com\sla\monitoring\repository\SlaRepository.class
 com\sla\monitoring\entity\enums\ServiceStatus.class
+com\sla\monitoring\dto\response\SlaWithServicesResponse.class
 com\sla\monitoring\dto\response\AuthenticationResponse.class
 com\sla\monitoring\dto\response\AuthenticationResponse$AuthenticationResponseBuilder.class
 com\sla\monitoring\dto\request\RegisterRequest.class
@@ -167,9 +187,11 @@ com\sla\monitoring\dto\response\AlertResponse$AlertResponseBuilder.class
 com\sla\monitoring\audit\BaseAuditEntity.class
 com\sla\monitoring\dto\request\AlertCreateRequest.class
 com\sla\monitoring\entity\Incident.class
+com\sla\monitoring\report\PdfReportGenerator$1.class
 com\sla\monitoring\dto\request\ServiceEntityUpdateRequest.class
 com\sla\monitoring\service\impl\IncidentServiceImpl.class
 com\sla\monitoring\controller\ServiceEntityController.class
+com\sla\monitoring\entity\Notification.class
 com\sla\monitoring\dto\response\MetricSimulationResponse$MetricSimulationResponseBuilder.class
 com\sla\monitoring\dto\response\MonitoringMetricResponse$MonitoringMetricResponseBuilder.class
 com\sla\monitoring\dto\request\ServiceEntityCreateRequest.class
@@ -201,4 +223,5 @@ com\sla\monitoring\service\impl\SlaEngineServiceImpl.class
 com\sla\monitoring\security\service\CustomUserDetails.class
 com\sla\monitoring\security\SecurityConfig.class
 com\sla\monitoring\dto\request\SlaUpdateRequest$SlaUpdateRequestBuilder.class
+com\sla\monitoring\dto\response\ClientPortfolioResponse$ClientPortfolioResponseBuilder.class
 com\sla\monitoring\entity\Alert.class

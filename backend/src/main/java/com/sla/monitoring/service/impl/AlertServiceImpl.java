@@ -5,6 +5,7 @@ import com.sla.monitoring.dto.response.AlertResponse;
 import com.sla.monitoring.entity.Alert;
 import com.sla.monitoring.entity.Sla;
 import com.sla.monitoring.entity.enums.AlertStatus;
+import com.sla.monitoring.entity.enums.AlertType;
 import com.sla.monitoring.exception.BusinessException;
 import com.sla.monitoring.exception.ResourceNotFoundException;
 import com.sla.monitoring.mapper.AlertMapper;
@@ -56,8 +57,28 @@ public class AlertServiceImpl implements AlertService {
     }
 
     @Override
+    @Transactional
+    public AlertResponse resolveAlert(Long id) {
+        Alert alert = findAlertEntityById(id);
+
+        if (alert.getStatus() == AlertStatus.RESOLVED) {
+            throw new BusinessException("Alert is already resolved");
+        }
+
+        alert.setStatus(AlertStatus.RESOLVED);
+        return alertMapper.toResponse(alertRepository.save(alert));
+    }
+
+    @Override
     public List<AlertResponse> findAll() {
-        return alertRepository.findAll().stream()
+        return alertRepository.findAllWithDetails().stream()
+                .map(alertMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<AlertResponse> findFiltered(Long slaId, Long serviceId, AlertType type, AlertStatus status) {
+        return alertRepository.findFiltered(slaId, serviceId, type, status).stream()
                 .map(alertMapper::toResponse)
                 .toList();
     }

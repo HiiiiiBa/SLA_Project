@@ -1,5 +1,5 @@
 export type Role = "ADMIN" | "USER" | "CLIENT";
-export type SlaStatus = "ACTIVE" | "WARNING" | "BREACHED" | "ARCHIVED";
+export type SlaStatus = "ACTIVE" | "INACTIVE" | "WARNING" | "BREACHED" | "ARCHIVED";
 export type AlertStatus = "NEW" | "READ" | "RESOLVED";
 export type AlertType = "EMAIL" | "WEB";
 export type ReportFormat = "PDF" | "CSV";
@@ -36,6 +36,8 @@ export interface Sla {
   responseTimeLimit: number;
   errorRateLimit: number;
   clientId: number;
+  clientName?: string;
+  serviceCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +57,9 @@ export interface Alert {
   message: string;
   status: AlertStatus;
   slaId: number;
+  slaName?: string;
+  serviceId?: number;
+  serviceName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -75,6 +80,22 @@ export interface AlertNotification {
   alertId: number;
   type: AlertType;
   status: AlertStatus;
+  message: string;
+  slaId: number;
+  slaName: string;
+  clientName: string;
+  createdAt: string;
+}
+
+export type NotificationChannel = "WEBSOCKET" | "EMAIL";
+export type NotificationDeliveryStatus = "SENT" | "FAILED";
+
+export interface NotificationRecord {
+  id: number;
+  alertId?: number;
+  channel: NotificationChannel;
+  status: NotificationDeliveryStatus;
+  recipient?: string;
   message: string;
   slaId: number;
   slaName: string;
@@ -131,6 +152,7 @@ export interface SlaUpdateRequest {
   uptimeTarget: number;
   responseTimeLimit: number;
   errorRateLimit: number;
+  clientId: number;
 }
 
 export interface IncidentCreateRequest {
@@ -180,6 +202,7 @@ export interface ServiceEntity {
   name: string;
   status: ServiceStatus;
   slaId: number;
+  slaName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -193,6 +216,24 @@ export interface ServiceCreateRequest {
 export interface ServiceUpdateRequest {
   name: string;
   status: ServiceStatus;
+  slaId?: number;
+}
+
+export interface SlaWithServices {
+  id: number;
+  name: string;
+  status: SlaStatus;
+  uptimeTarget: number;
+  responseTimeLimit: number;
+  errorRateLimit: number;
+  createdAt: string;
+  updatedAt: string;
+  services: ServiceEntity[];
+}
+
+export interface ClientPortfolio {
+  client: Client;
+  slas: SlaWithServices[];
 }
 
 export interface SlaEvaluation {

@@ -3,29 +3,39 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-  --background: #f8fafc;
+  /* Light mode - subtle, professional */
+  --background: #f0f4f8;
   --foreground: #0f172a;
   --card: #ffffff;
   --card-foreground: #0f172a;
   --muted: #64748b;
-  --border: #e2e8f0;
+  --border: #e0e7ff;
   --input: #ffffff;
-  --sidebar: #020617;
-  --primary: #059669;
+  --sidebar: #ffffff;
+  --primary: #0ea5e9;
   --primary-foreground: #ffffff;
+  --accent: #06b6d4;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
 }
 
 [data-theme="dark"] {
-  --background: #020617;
-  --foreground: #f1f5f9;
-  --card: #0f172a;
-  --card-foreground: #f1f5f9;
-  --muted: #94a3b8;
-  --border: #1e293b;
-  --input: #1e293b;
-  --sidebar: #020617;
-  --primary: #10b981;
-  --primary-foreground: #ffffff;
+  /* Dark mode - premium ocean aesthetic */
+  --background: #0a0e27;
+  --foreground: #e0e7ff;
+  --card: #1a1f3a;
+  --card-foreground: #e0e7ff;
+  --muted: #a5b4fc;
+  --border: #312e81;
+  --input: #0f1729;
+  --sidebar: #0a0e27;
+  --primary: #0ea5e9;
+  --primary-foreground: #0a0e27;
+  --accent: #06b6d4;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
 }
 
 @theme inline {
@@ -34,6 +44,11 @@
   --color-card: var(--card);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -50,11 +65,12 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 ::selection {
-  background: rgba(16, 185, 129, 0.25);
+  background: rgba(14, 165, 233, 0.3);
+  color: var(--foreground);
 }
 
 table {
@@ -72,38 +88,85 @@ table {
   }
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(14, 165, 233, 0.2);
+  }
+}
+
 .animate-slide-in {
   animation: slide-in 0.25s ease-out;
 }
 
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
 .page-shell {
-  @apply min-h-screen bg-slate-50 dark:bg-slate-950;
+  @apply min-h-screen bg-gradient-to-br from-background to-background;
 }
 
 .surface-card {
-  @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-slate-950/50;
+  @apply rounded-xl border border-border bg-card shadow-lg shadow-black/20 transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 dark:hover:shadow-primary/20;
+}
+
+.surface-card-interactive {
+  @apply cursor-pointer;
 }
 
 .surface-muted {
-  @apply bg-slate-50 dark:bg-slate-800/50;
+  @apply bg-card/50;
 }
 
 .text-body {
-  @apply text-slate-700 dark:text-slate-300;
+  @apply text-foreground/80;
 }
 
 .text-muted {
-  @apply text-slate-500 dark:text-slate-400;
+  @apply text-muted;
 }
 
 .text-heading {
-  @apply text-slate-900 dark:text-slate-100;
+  @apply text-foreground font-semibold;
 }
 
 .table-head {
-  @apply bg-slate-50 text-left text-slate-500 dark:bg-slate-800/60 dark:text-slate-400;
+  @apply bg-card/50 text-left text-muted uppercase text-xs font-semibold tracking-wider;
 }
 
 .table-row {
-  @apply border-t border-slate-100 hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-800/40;
+  @apply border-b border-border hover:bg-card/50 transition-colors duration-200;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
+}
+
+/* Focus states for accessibility */
+:focus-visible {
+  @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  @apply ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
 }

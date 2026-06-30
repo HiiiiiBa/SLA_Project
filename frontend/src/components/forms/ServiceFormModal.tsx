@@ -20,11 +20,12 @@ interface ServiceFormModalProps {
   onClose: () => void;
   onSaved: () => void;
   service?: ServiceEntity | null;
+  defaultSlaId?: number;
 }
 
 const statuses: ServiceStatus[] = ["UP", "DOWN"];
 
-export function ServiceFormModal({ open, onClose, onSaved, service }: ServiceFormModalProps) {
+export function ServiceFormModal({ open, onClose, onSaved, service, defaultSlaId }: ServiceFormModalProps) {
   const isEdit = Boolean(service);
   const [slas, setSlas] = useState<Sla[]>([]);
   const [name, setName] = useState("");
@@ -42,7 +43,7 @@ export function ServiceFormModal({ open, onClose, onSaved, service }: ServiceFor
     if (!open) return;
     setName(service?.name ?? "");
     setStatus(service?.status ?? "UP");
-    setSlaId(service?.slaId ? String(service.slaId) : "");
+    setSlaId(service?.slaId ? String(service.slaId) : defaultSlaId ? String(defaultSlaId) : "");
     setError("");
   }, [open, service]);
 
@@ -53,7 +54,11 @@ export function ServiceFormModal({ open, onClose, onSaved, service }: ServiceFor
 
     try {
       if (isEdit && service) {
-        const payload: ServiceUpdateRequest = { name, status };
+        const payload: ServiceUpdateRequest = {
+          name,
+          status,
+          slaId: Number(slaId),
+        };
         await apiFetch<ServiceEntity>(`/api/services/${service.id}`, {
           method: "PUT",
           body: JSON.stringify(payload),
@@ -90,10 +95,20 @@ export function ServiceFormModal({ open, onClose, onSaved, service }: ServiceFor
           <Label htmlFor="service-name">Nom</Label>
           <Input id="service-name" value={name} onChange={(e) => setName(e.target.value)} required />
         </div>
-        {!isEdit && (
+        {!isEdit ? (
           <div className="space-y-2">
             <Label htmlFor="service-sla">SLA</Label>
             <Select id="service-sla" value={slaId} onChange={(e) => setSlaId(e.target.value)} required>
+              <option value="">Sélectionner un SLA</option>
+              {slas.map((sla) => (
+                <option key={sla.id} value={sla.id}>{sla.name}</option>
+              ))}
+            </Select>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Label htmlFor="service-sla-edit">SLA associé</Label>
+            <Select id="service-sla-edit" value={slaId} onChange={(e) => setSlaId(e.target.value)} required>
               <option value="">Sélectionner un SLA</option>
               {slas.map((sla) => (
                 <option key={sla.id} value={sla.id}>{sla.name}</option>

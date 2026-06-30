@@ -20,6 +20,9 @@ public class AlertResponse {
     private String message;
     private AlertStatus status;
     private Long slaId;
+    private String slaName;
+    private Long serviceId;
+    private String serviceName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

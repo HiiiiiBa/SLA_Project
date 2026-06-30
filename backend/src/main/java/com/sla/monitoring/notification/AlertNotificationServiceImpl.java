@@ -10,6 +10,9 @@ import com.sla.monitoring.entity.enums.Role;
 import com.sla.monitoring.notification.dto.AlertNotificationMessage;
 import com.sla.monitoring.repository.AlertRepository;
 import com.sla.monitoring.repository.UserRepository;
+import com.sla.monitoring.entity.enums.NotificationChannel;
+import com.sla.monitoring.entity.enums.NotificationStatus;
+import com.sla.monitoring.service.NotificationService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +42,7 @@ public class AlertNotificationServiceImpl implements AlertNotificationService {
     private final AlertNotificationProperties properties;
     private final UserRepository userRepository;
     private final AlertRepository alertRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Async
@@ -63,8 +67,30 @@ public class AlertNotificationServiceImpl implements AlertNotificationService {
     }
 
     private void publishWebSocket(AlertNotificationMessage message) {
-        messagingTemplate.convertAndSend(ALERTS_TOPIC, message);
-        log.info("WebSocket alert published: alertId={}, slaId={}", message.getAlertId(), message.getSlaId());
+        try {
+            messagingTemplate.convertAndSend(ALERTS_TOPIC, message);
+            notificationService.record(
+                    message.getAlertId(),
+                    NotificationChannel.WEBSOCKET,
+                    NotificationStatus.SENT,
+                    "broadcast",
+                    message.getMessage(),
+                    message.getSlaId(),
+                    message.getSlaName(),
+                    message.getClientName());
+            log.info("WebSocket alert published: alertId={}, slaId={}", message.getAlertId(), message.getSlaId());
+        } catch (Exception ex) {
+            notificationService.record(
+                    message.getAlertId(),
+                    NotificationChannel.WEBSOCKET,
+                    NotificationStatus.FAILED,
+                    "broadcast",
+                    message.getMessage(),
+                    message.getSlaId(),
+                    message.getSlaName(),
+                    message.getClientName());
+            log.error("Failed to publish WebSocket alert: alertId={}", message.getAlertId(), ex);
+        }
     }
 
     private void sendEmail(Alert alert, Sla sla, Client client) {
@@ -82,10 +108,37 @@ public class AlertNotificationServiceImpl implements AlertNotificationService {
             helper.setSubject(buildSubject(sla));
             helper.setText(buildEmailBody(alert, sla, client), false);
             mailSender.send(mimeMessage);
+            notificationService.record(
+                    alert.getId(),
+                    NotificationChannel.EMAIL,
+                    NotificationStatus.SENT,
+                    String.join(", ", recipients),
+                    alert.getMessage(),
+                    sla.getId(),
+                    sla.getName(),
+                    client.getName());
             log.info("Alert email sent to {} recipient(s) for alert id={}", recipients.size(), alert.getId());
         } catch (MessagingException ex) {
+            notificationService.record(
+                    alert.getId(),
+                    NotificationChannel.EMAIL,
+                    NotificationStatus.FAILED,
+                    String.join(", ", recipients),
+                    alert.getMessage(),
+                    sla.getId(),
+                    sla.getName(),
+                    client.getName());
             log.error("Failed to send alert email for alert id={}", alert.getId(), ex);
         } catch (Exception ex) {
+            notificationService.record(
+                    alert.getId(),
+                    NotificationChannel.EMAIL,
+                    NotificationStatus.FAILED,
+                    String.join(", ", recipients),
+                    alert.getMessage(),
+                    sla.getId(),
+                    sla.getName(),
+                    client.getName());
             log.error("Unexpected error while sending alert email for alert id={}", alert.getId(), ex);
         }
     }
