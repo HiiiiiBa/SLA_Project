@@ -38,7 +38,7 @@ export function LoginForm() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="relative hidden overflow-hidden bg-slate-950 lg:flex lg:flex-col lg:justify-between lg:p-12">
+      <div className="relative hidden overflow-hidden bg-slate-100 lg:flex lg:flex-col lg:justify-between lg:p-12 dark:bg-slate-950">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.25),_transparent_45%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.18),_transparent_40%)]" />
         <div className="relative">
           <div className="mb-8 flex items-center gap-3">

@@ -21,7 +21,7 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 const STORAGE_KEY = "sla_theme";
 
 function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle("dark", theme === "dark");
+  document.documentElement.dataset.theme = theme;
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -43,8 +43,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  }, [setTheme, theme]);
+    setThemeState((current) => {
+      const next = current === "dark" ? "light" : "dark";
+      localStorage.setItem(STORAGE_KEY, next);
+      applyTheme(next);
+      return next;
+    });
+  }, []);
 
   const value = useMemo(
     () => ({ theme, toggleTheme, setTheme }),
