@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Label } from "@/components/ui/Label";
 import { Modal } from "@/components/ui/Modal";
 import { ApiError, apiFetch } from "@/lib/api";
@@ -67,9 +67,8 @@ export function ResetPasswordModal({ open, onClose, onSaved, user }: ResetPasswo
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="reset-password">Nouveau mot de passe</Label>
-          <Input
+          <PasswordInput
             id="reset-password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -78,9 +77,8 @@ export function ResetPasswordModal({ open, onClose, onSaved, user }: ResetPasswo
         </div>
         <div className="space-y-2">
           <Label htmlFor="reset-confirm">Confirmer le mot de passe</Label>
-          <Input
+          <PasswordInput
             id="reset-confirm"
-            type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required

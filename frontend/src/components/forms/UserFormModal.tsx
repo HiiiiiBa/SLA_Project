@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Label } from "@/components/ui/Label";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
@@ -107,9 +108,8 @@ export function UserFormModal({ open, onClose, onSaved, user }: UserFormModalPro
           <Label htmlFor="user-password">
             Mot de passe {isEdit && "(laisser vide pour ne pas changer)"}
           </Label>
-          <Input
+          <PasswordInput
             id="user-password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required={!isEdit}

@@ -7,18 +7,13 @@ import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-
-const DEMO_ACCOUNTS = [
-  { role: "Administrateur", email: "admin@sla.com", password: "Admin123!" },
-  { role: "Opérateur", email: "user@sla.com", password: "User123!" },
-  { role: "Client Acme", email: "client@acme.com", password: "Client123!" },
-] as const;
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 export function LoginForm() {
   const { login, user } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState("admin@sla.com");
-  const [password, setPassword] = useState("Admin123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -122,7 +117,7 @@ export function LoginForm() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-11"
-                    placeholder="admin@sla.com"
+                    placeholder="vous@exemple.com"
                     required
                   />
                 </div>
@@ -134,12 +129,11 @@ export function LoginForm() {
                   Mot de passe
                 </label>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-                  <Input
-                    type="password"
+                  <Lock className="pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted" />
+                  <PasswordInput
+                    withLeftIcon
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-11"
                     placeholder="••••••••"
                     required
                   />
@@ -158,32 +152,6 @@ export function LoginForm() {
                 Se connecter
               </Button>
             </form>
-
-            {/* Demo credentials */}
-            <div className="mt-6 space-y-3 rounded-lg border border-border bg-card/50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-                Comptes de démonstration
-              </p>
-              <div className="grid gap-2">
-                {DEMO_ACCOUNTS.map((account) => (
-                  <button
-                    key={account.email}
-                    type="button"
-                    onClick={() => {
-                      setEmail(account.email);
-                      setPassword(account.password);
-                    }}
-                    className="flex items-center justify-between rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-left text-sm transition hover:border-primary/40 hover:bg-primary/5"
-                  >
-                    <span className="font-medium text-heading">{account.role}</span>
-                    <span className="font-mono text-xs text-muted">{account.email}</span>
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted">
-                Cliquez sur un compte pour remplir le formulaire, puis connectez-vous.
-              </p>
-            </div>
           </div>
         </div>
       </div>
