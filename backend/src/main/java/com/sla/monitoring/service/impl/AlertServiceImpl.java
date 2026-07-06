@@ -55,6 +55,7 @@ public class AlertServiceImpl implements AlertService {
     @Transactional
     public AlertResponse markAsRead(Long id) {
         Alert alert = findAlertEntityById(id);
+        assertCanMutateAlert(alert);
 
         if (alert.getStatus() == AlertStatus.RESOLVED) {
             throw new BusinessException("Cannot mark a resolved alert as read");
@@ -68,6 +69,7 @@ public class AlertServiceImpl implements AlertService {
     @Transactional
     public AlertResponse resolveAlert(Long id) {
         Alert alert = findAlertEntityById(id);
+        assertCanMutateAlert(alert);
 
         if (alert.getStatus() == AlertStatus.RESOLVED) {
             throw new BusinessException("Alert is already resolved");
@@ -168,6 +170,10 @@ public class AlertServiceImpl implements AlertService {
     private Alert findAlertEntityById(Long id) {
         return alertRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert", "id", id));
+    }
+
+    private void assertCanMutateAlert(Alert alert) {
+        managerScopeService.assertSlaAccess(alert.getSla().getId());
     }
 
     private Sla findSlaById(Long id) {

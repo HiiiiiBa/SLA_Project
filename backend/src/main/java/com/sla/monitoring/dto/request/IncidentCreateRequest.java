@@ -29,4 +29,6 @@ public class IncidentCreateRequest {
     private Long slaId;
 
     private Long projectId;
+
+    private Long assigneeId;
 }

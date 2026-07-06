@@ -32,46 +32,48 @@ export function SlaLifecycleActions({
     }
   }
 
-  const canActivate =
-    sla.status === "INACTIVE" || sla.status === "WARNING" || sla.status === "BREACHED";
-  const canDeactivate = sla.status !== "INACTIVE" && sla.status !== "ARCHIVED";
+  const canToggleActive =
+    sla.status === "INACTIVE"
+    || sla.status === "ACTIVE"
+    || sla.status === "WARNING"
+    || sla.status === "BREACHED";
+  const isActiveState =
+    sla.status === "ACTIVE" || sla.status === "WARNING" || sla.status === "BREACHED";
   const canArchive = sla.status !== "ARCHIVED";
+
+  async function handleToggleActive() {
+    if (isActiveState) {
+      await runAction(
+        `/api/slas/${sla.id}/deactivate`,
+        `Désactiver le SLA "${sla.name}" ? Il ne sera plus évalué par le moteur SLA.`,
+        "Désactivation",
+      );
+    } else {
+      await runAction(
+        `/api/slas/${sla.id}/activate`,
+        `Activer le SLA "${sla.name}" ?`,
+        "Activation",
+      );
+    }
+  }
 
   const iconButtonClass = compact ? "!px-2.5 !py-2" : undefined;
 
   if (compact) {
     return (
       <>
-        {canActivate && (
+        {canToggleActive && (
           <Button
             variant="secondary"
             className={iconButtonClass}
-            title="Activer"
-            onClick={() =>
-              runAction(
-                `/api/slas/${sla.id}/activate`,
-                `Activer le SLA "${sla.name}" ?`,
-                "Activation",
-              )
-            }
+            title={isActiveState ? "Désactiver" : "Activer"}
+            onClick={handleToggleActive}
           >
-            <PlayCircle className="h-4 w-4" />
-          </Button>
-        )}
-        {canDeactivate && (
-          <Button
-            variant="secondary"
-            className={iconButtonClass}
-            title="Désactiver"
-            onClick={() =>
-              runAction(
-                `/api/slas/${sla.id}/deactivate`,
-                `Désactiver le SLA "${sla.name}" ? Il ne sera plus évalué par le moteur SLA.`,
-                "Désactivation",
-              )
-            }
-          >
-            <PauseCircle className="h-4 w-4" />
+            {isActiveState ? (
+              <PauseCircle className="h-4 w-4" />
+            ) : (
+              <PlayCircle className="h-4 w-4" />
+            )}
           </Button>
         )}
         {canArchive && (
@@ -96,34 +98,19 @@ export function SlaLifecycleActions({
 
   return (
     <div className="mt-2 flex flex-wrap gap-2">
-      {canActivate && (
-        <Button
-          variant="secondary"
-          onClick={() =>
-            runAction(
-              `/api/slas/${sla.id}/activate`,
-              `Activer le SLA "${sla.name}" ?`,
-              "Activation",
-            )
-          }
-        >
-          <PlayCircle className="h-4 w-4" />
-          Activer
-        </Button>
-      )}
-      {canDeactivate && (
-        <Button
-          variant="secondary"
-          onClick={() =>
-            runAction(
-              `/api/slas/${sla.id}/deactivate`,
-              `Désactiver le SLA "${sla.name}" ? Il ne sera plus évalué par le moteur SLA.`,
-              "Désactivation",
-            )
-          }
-        >
-          <PauseCircle className="h-4 w-4" />
-          Désactiver
+      {canToggleActive && (
+        <Button variant="secondary" onClick={handleToggleActive}>
+          {isActiveState ? (
+            <>
+              <PauseCircle className="h-4 w-4" />
+              Désactiver
+            </>
+          ) : (
+            <>
+              <PlayCircle className="h-4 w-4" />
+              Activer
+            </>
+          )}
         </Button>
       )}
       {canArchive && (

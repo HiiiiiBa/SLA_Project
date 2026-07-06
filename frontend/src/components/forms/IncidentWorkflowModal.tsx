@@ -20,6 +20,7 @@ import type {
   IncidentStatusChangeRequest,
   IncidentUpdateRequest,
   Project,
+  Sla,
   User,
 } from "@/types";
 
@@ -71,6 +72,33 @@ export function IncidentWorkflowModal({
   const loadCandidates = useCallback(() => {
     if (!open || !canAssignIncident) return;
 
+    if (isAdmin) {
+      const resolveClientId = async (): Promise<number | undefined> => {
+        if (incident.projectId) {
+          const projects = await apiFetch<Project[]>("/api/projects");
+          return projects.find((item) => item.id === incident.projectId)?.clientId;
+        }
+        const sla = await apiFetch<Sla>(`/api/slas/${incident.slaId}`);
+        return sla.clientId;
+      };
+
+      resolveClientId()
+        .then((clientId) => {
+          const url = clientId
+            ? `/api/org/users?role=MANAGER&clientId=${clientId}`
+            : "/api/org/users?role=MANAGER";
+          return apiFetch<User[]>(url);
+        })
+        .then(setCandidates)
+        .catch(() => setCandidates([]));
+      return;
+    }
+
+    if (!isManager) {
+      setCandidates([]);
+      return;
+    }
+
     if (incident.projectId) {
       apiFetch<Project[]>("/api/projects")
         .then((projects) => {
@@ -99,7 +127,7 @@ export function IncidentWorkflowModal({
     apiFetch<User[]>("/api/org/users?role=EMPLOYEE")
       .then(setCandidates)
       .catch(() => setCandidates([]));
-  }, [open, canAssignIncident, incident.projectId]);
+  }, [open, canAssignIncident, isAdmin, isManager, incident.projectId, incident.slaId]);
 
   useEffect(() => {
     if (!open) return;
@@ -228,7 +256,9 @@ export function IncidentWorkflowModal({
 
         {canAssign && (
           <div className="space-y-3 rounded-xl border border-border bg-card/50 p-4">
-            <Label htmlFor="workflow-assignee">Assigner à un employé</Label>
+            <Label htmlFor="workflow-assignee">
+              {isAdmin ? "Assigner à un manager" : "Assigner à un employé"}
+            </Label>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <Select
                 id="workflow-assignee"
@@ -245,7 +275,7 @@ export function IncidentWorkflowModal({
               </Select>
               <Button type="button" loading={loading} onClick={handleAssign}>
                 <UserCheck className="h-4 w-4" />
-                {isManager ? "Assigner" : "Mettre à jour l'assignation"}
+                {isAdmin ? "Assigner au manager" : "Assigner à l'employé"}
               </Button>
             </div>
             <p className="text-xs text-muted">

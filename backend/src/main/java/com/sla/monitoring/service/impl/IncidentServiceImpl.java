@@ -16,10 +16,12 @@ import com.sla.monitoring.exception.BusinessException;
 import com.sla.monitoring.exception.ForbiddenException;
 import com.sla.monitoring.exception.ResourceNotFoundException;
 import com.sla.monitoring.mapper.IncidentMapper;
+import com.sla.monitoring.repository.ClientRepository;
 import com.sla.monitoring.repository.IncidentRepository;
 import com.sla.monitoring.repository.ProjectRepository;
 import com.sla.monitoring.repository.SlaRepository;
 import com.sla.monitoring.repository.UserRepository;
+import com.sla.monitoring.security.util.SecurityUtils;
 import com.sla.monitoring.service.ClientScopeService;
 import com.sla.monitoring.service.EmployeeScopeService;
 import com.sla.monitoring.service.IncidentService;
@@ -40,6 +42,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final SlaRepository slaRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final ClientRepository clientRepository;
     private final IncidentMapper incidentMapper;
     private final EmployeeScopeService employeeScopeService;
     private final ManagerScopeService managerScopeService;
@@ -63,7 +66,16 @@ public class IncidentServiceImpl implements IncidentService {
         Incident incident = incidentMapper.toEntity(request);
         incident.setSla(sla);
         incident.setProject(resolveProject(request.getProjectId()));
-        incident.setStatus(IncidentStatus.OPEN);
+
+        if (request.getAssigneeId() != null) {
+            if (clientScopeService.isCurrentUserClient() || employeeScopeService.isCurrentUserEmployee()) {
+                throw new ForbiddenException("Only admins and managers can assign incidents");
+            }
+            incident.setAssignee(resolveAssignee(incident, request.getAssigneeId()));
+            incident.setStatus(IncidentStatus.IN_PROGRESS);
+        } else {
+            incident.setStatus(IncidentStatus.OPEN);
+        }
 
         return incidentMapper.toResponse(incidentRepository.save(incident));
     }
@@ -126,7 +138,7 @@ public class IncidentServiceImpl implements IncidentService {
             throw new ForbiddenException("Clients cannot assign incidents");
         }
         if (employeeScopeService.isCurrentUserEmployee()) {
-            throw new ForbiddenException("Only managers can assign incidents");
+            throw new ForbiddenException("Only admins and managers can assign incidents");
         }
 
         Long assigneeId = request.getAssigneeId();
@@ -275,14 +287,40 @@ public class IncidentServiceImpl implements IncidentService {
     private User resolveAssignee(Incident incident, Long assigneeId) {
         User assignee = userRepository.findById(assigneeId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", assigneeId));
+        Role assignerRole = SecurityUtils.getCurrentUserDetails().getUser().getRole();
+        if (assignerRole == Role.ADMIN) {
+            return resolveManagerAssignee(incident, assignee);
+        }
+        if (assignerRole == Role.MANAGER) {
+            return resolveEmployeeAssignee(incident, assignee);
+        }
+        throw new ForbiddenException("You are not allowed to assign incidents");
+    }
+
+    private User resolveManagerAssignee(Incident incident, User assignee) {
+        if (assignee.getRole() != Role.MANAGER) {
+            throw new BusinessException("Admins must assign incidents to a manager");
+        }
+        Long clientId = resolveIncidentClientId(incident);
+        boolean linked = clientRepository.findByIdWithManagers(clientId)
+                .map(client -> client.getManagers().stream()
+                        .anyMatch(manager -> manager.getId().equals(assignee.getId())))
+                .orElse(false);
+        if (!linked) {
+            throw new BusinessException("Assignee must be a manager for this client");
+        }
+        return assignee;
+    }
+
+    private User resolveEmployeeAssignee(Incident incident, User assignee) {
         if (assignee.getRole() != Role.EMPLOYEE) {
-            throw new BusinessException("Only employees can be assigned to incidents");
+            throw new BusinessException("Managers must assign incidents to an employee");
         }
         if (incident.getProject() != null) {
             Project project = projectRepository.findByIdWithDetails(incident.getProject().getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Project", "id", incident.getProject().getId()));
             boolean member = project.getAssignedMembers().stream()
-                    .anyMatch(user -> user.getId().equals(assigneeId));
+                    .anyMatch(user -> user.getId().equals(assignee.getId()));
             if (!member) {
                 throw new BusinessException("Assignee must be a member of the incident project");
             }
@@ -290,6 +328,21 @@ public class IncidentServiceImpl implements IncidentService {
             employeeScopeService.assertSlaAccess(incident.getSla().getId());
         }
         return assignee;
+    }
+
+    private Long resolveIncidentClientId(Incident incident) {
+        if (incident.getProject() != null) {
+            Project project = projectRepository.findById(incident.getProject().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", incident.getProject().getId()));
+            return project.getClient().getId();
+        }
+        Sla sla = incident.getSla();
+        if (sla.getClient() == null) {
+            Long slaId = sla.getId();
+            sla = slaRepository.findById(slaId)
+                    .orElseThrow(() -> new ResourceNotFoundException("SLA", "id", slaId));
+        }
+        return sla.getClient().getId();
     }
 
     private List<Incident> filterVisible(List<Incident> incidents) {

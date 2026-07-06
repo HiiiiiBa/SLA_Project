@@ -21,7 +21,8 @@ import type {
 } from "@/types";
 
 export default function AlertsPage() {
-  const { isAdmin, isClient } = useAuth();
+  const { isAdmin, isManager, isClient } = useAuth();
+  const canManageAlerts = isAdmin || isManager;
   const sessionUserId = useSessionUserId();
   const { connected, liveNotifications } = useNotifications();
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -240,7 +241,7 @@ export default function AlertsPage() {
                   <th className="px-6 py-4 font-medium">Service</th>
                   <th className="px-6 py-4 font-medium">Message</th>
                   <th className="px-6 py-4 font-medium">Créée le</th>
-                  {isAdmin && <th className="min-w-[11rem] whitespace-nowrap px-6 py-4 font-medium">Actions</th>}
+                  {canManageAlerts && <th className="min-w-[11rem] whitespace-nowrap px-6 py-4 font-medium">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -259,7 +260,7 @@ export default function AlertsPage() {
                     </td>
                     <td className="max-w-md px-6 py-4 text-body">{alert.message}</td>
                     <td className="px-6 py-4 text-muted">{formatDate(alert.createdAt)}</td>
-                    {isAdmin && (
+                    {canManageAlerts && (
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="inline-flex items-center gap-1.5">
                           {alert.status === "NEW" && (
@@ -282,14 +283,16 @@ export default function AlertsPage() {
                               <CheckCircle2 className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button
-                            variant="danger"
-                            className="!px-2.5 !py-2"
-                            title="Supprimer"
-                            onClick={() => handleDelete(alert)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="danger"
+                              className="!px-2.5 !py-2"
+                              title="Supprimer"
+                              onClick={() => handleDelete(alert)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     )}

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { useAuth } from "@/context/AuthContext";
 import { ApiError, apiFetch } from "@/lib/api";
 import { nowForInput, toApiDateTime, toInputDateTime } from "@/lib/datetime";
 import type {
@@ -16,6 +17,7 @@ import type {
   IncidentUpdateRequest,
   Project,
   Sla,
+  User,
 } from "@/types";
 
 interface IncidentFormModalProps {
@@ -35,17 +37,70 @@ export function IncidentFormModal({
   incident,
   defaultSlaId,
 }: IncidentFormModalProps) {
+  const { canAssignIncident, isAdmin, isManager } = useAuth();
   const isEdit = Boolean(incident);
   const [slas, setSlas] = useState<Sla[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [assigneeCandidates, setAssigneeCandidates] = useState<User[]>([]);
   const [slaId, setSlaId] = useState("");
   const [projectId, setProjectId] = useState("");
+  const [assigneeId, setAssigneeId] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [severity, setSeverity] = useState<IncidentSeverity>("MEDIUM");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const loadAssigneeCandidates = useCallback(() => {
+    if (!open || !canAssignIncident || isEdit) return;
+
+    const clientId = projectId
+      ? projects.find((item) => String(item.id) === projectId)?.clientId
+      : slaId
+        ? slas.find((item) => String(item.id) === slaId)?.clientId
+        : undefined;
+
+    if (isAdmin) {
+      const url = clientId
+        ? `/api/org/users?role=MANAGER&clientId=${clientId}`
+        : "/api/org/users?role=MANAGER";
+      apiFetch<User[]>(url)
+        .then(setAssigneeCandidates)
+        .catch(() => setAssigneeCandidates([]));
+      return;
+    }
+
+    if (!isManager) {
+      setAssigneeCandidates([]);
+      return;
+    }
+
+    if (projectId) {
+      const project = projects.find((item) => String(item.id) === projectId);
+      if (!project?.assignedMembers?.length) {
+        setAssigneeCandidates([]);
+        return;
+      }
+      setAssigneeCandidates(
+        project.assignedMembers.map((member) => ({
+          id: member.id,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          email: member.email,
+          role: "EMPLOYEE",
+          enabled: true,
+          createdAt: "",
+          updatedAt: "",
+        })),
+      );
+      return;
+    }
+
+    apiFetch<User[]>("/api/org/users?role=EMPLOYEE")
+      .then(setAssigneeCandidates)
+      .catch(() => setAssigneeCandidates([]));
+  }, [open, canAssignIncident, isEdit, isAdmin, isManager, projectId, projects, slaId, slas]);
 
   useEffect(() => {
     if (!open) return;
@@ -64,15 +119,28 @@ export function IncidentFormModal({
   }, [open]);
 
   useEffect(() => {
+    loadAssigneeCandidates();
+  }, [loadAssigneeCandidates]);
+
+  useEffect(() => {
     if (!open) return;
     setSlaId(String(incident?.slaId ?? defaultSlaId ?? ""));
     setProjectId(incident?.projectId ? String(incident.projectId) : "");
+    setAssigneeId("");
     setStartTime(toInputDateTime(incident?.startTime) || nowForInput());
     setEndTime(toInputDateTime(incident?.endTime));
     setSeverity(incident?.severity ?? "MEDIUM");
     setDescription(incident?.description ?? "");
     setError("");
   }, [open, incident, defaultSlaId]);
+
+  useEffect(() => {
+    if (!assigneeId) return;
+    const stillValid = assigneeCandidates.some((user) => String(user.id) === assigneeId);
+    if (!stillValid) {
+      setAssigneeId("");
+    }
+  }, [assigneeCandidates, assigneeId]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -99,6 +167,7 @@ export function IncidentFormModal({
           description,
           slaId: Number(slaId),
           projectId: projectId ? Number(projectId) : undefined,
+          assigneeId: assigneeId ? Number(assigneeId) : undefined,
         };
         await apiFetch<Incident>("/api/incidents", {
           method: "POST",
@@ -155,6 +224,40 @@ export function IncidentFormModal({
             ))}
           </Select>
         </div>
+        {!isEdit && canAssignIncident && (
+          <div className="space-y-2">
+            <Label htmlFor="incident-assignee">
+              {isAdmin ? "Manager assigné (optionnel)" : "Employé assigné (optionnel)"}
+            </Label>
+            <Select
+              id="incident-assignee"
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+            >
+              <option value="">Non assigné</option>
+              {assigneeCandidates.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.firstName} {user.lastName}
+                </option>
+              ))}
+            </Select>
+            {isAdmin && !slaId && !projectId && (
+              <p className="text-xs text-muted">
+                Sélectionnez un SLA ou un projet pour filtrer les managers du client.
+              </p>
+            )}
+            {isManager && projectId && assigneeCandidates.length === 0 && (
+              <p className="text-xs text-muted">
+                Aucun employé assigné à ce projet — choisissez un autre projet ou laissez vide.
+              </p>
+            )}
+            {isAdmin && (slaId || projectId) && assigneeCandidates.length === 0 && (
+              <p className="text-xs text-muted">
+                Aucun manager lié à ce client.
+              </p>
+            )}
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="incident-start">Début</Label>

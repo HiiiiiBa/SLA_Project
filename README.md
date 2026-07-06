@@ -85,7 +85,7 @@ Accès complet à la plateforme.
 | Utilisateurs | CRUD via **Administration** |
 | Clients / projets / équipes | Gestion complète |
 | SLA | Créer, modifier, archiver, supprimer ; gérer les services depuis le détail SLA |
-| Métriques, alertes, incidents | Consultation globale ; créer des incidents |
+| Métriques, alertes, incidents | Consultation globale ; créer des incidents ; **assigner à un manager** du client |
 | Rapports | Générer, consulter, télécharger PDF/CSV |
 | Validations | Approuver ou refuser les demandes des managers (notification temps réel) |
 
@@ -99,9 +99,10 @@ Périmètre limité aux clients affectés (`client_managers`).
 | Clients | Consultation de ses clients ; gestion projets/SLA |
 | SLA | Créer (avec services optionnels), modifier ; gérer les services (ajouter, modifier, supprimer) depuis le détail SLA ; **demander** la suppression du SLA |
 | Projets / équipes | Créer, modifier ; **demander** la suppression (validation admin) |
-| Incidents | Créer, assigner un employé, suivre la résolution |
+| Incidents | Créer, **assigner à un employé**, suivre la résolution (incidents qui lui sont assignés par l’admin) |
+| Alertes | Consultation ; **marquer comme lu**, **résoudre** (périmètre clients assignés) |
 | Rapports | Générer et télécharger PDF/CSV |
-| Notifications | Alertes SLA + résultat des demandes de validation (cloche) |
+| Notifications | Alertes SLA temps réel + résultat des demandes de validation (cloche) |
 | Interdit | Suppression directe de projets/équipes/SLA, gestion utilisateurs, clients des autres managers |
 
 ### Client (CLIENT)

@@ -312,6 +312,7 @@ export interface IncidentCreateRequest {
   description: string;
   slaId: number;
   projectId?: number;
+  assigneeId?: number;
 }
 
 export interface IncidentUpdateRequest {
