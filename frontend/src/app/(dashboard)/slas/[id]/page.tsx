@@ -3,14 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Gauge, Plus, Server, Siren } from "lucide-react";
+import { ArrowLeft, Gauge, Pencil, Plus, Server, Siren, Trash2 } from "lucide-react";
 import { IncidentFormModal } from "@/components/forms/IncidentFormModal";
 import { ServiceFormModal } from "@/components/forms/ServiceFormModal";
+import { SlaApprovalRequestActions } from "@/components/sla/SlaApprovalRequestActions";
 import { SlaLifecycleActions } from "@/components/sla/SlaLifecycleActions";
 import { Header } from "@/components/layout/Header";
 import { SlaMetricsCharts } from "@/components/sla/SlaMetricsCharts";
 import { Button } from "@/components/ui/Button";
-import { SeverityBadge, ServiceStatusBadge, StatusBadge } from "@/components/ui/Badge";
+import { SeverityBadge, IncidentStatusBadge, ServiceStatusBadge, StatusBadge } from "@/components/ui/Badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -23,7 +24,7 @@ import type { Incident, MonitoringMetric, ServiceEntity, Sla } from "@/types";
 export default function SlaDetailPage() {
   const params = useParams();
   const slaId = Number(params.id);
-  const { isAdmin, canManageSla, canCreateIncident } = useAuth();
+  const { canManageSla, canManageSlaLifecycle, canRequestApproval, canCreateIncident, isClient } = useAuth();
   const sessionUserId = useSessionUserId();
   const [sla, setSla] = useState<Sla | null>(null);
   const [metrics, setMetrics] = useState<MonitoringMetric[]>([]);
@@ -33,6 +34,27 @@ export default function SlaDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [incidentModalOpen, setIncidentModalOpen] = useState(false);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<ServiceEntity | null>(null);
+
+  function openServiceModal(service: ServiceEntity | null = null) {
+    setSelectedService(service);
+    setServiceModalOpen(true);
+  }
+
+  function closeServiceModal() {
+    setServiceModalOpen(false);
+    setSelectedService(null);
+  }
+
+  async function handleDeleteService(service: ServiceEntity) {
+    if (!confirm(`Supprimer le service "${service.name}" ?`)) return;
+    try {
+      await apiFetch<void>(`/api/services/${service.id}`, { method: "DELETE" });
+      loadData();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Suppression impossible");
+    }
+  }
 
   const loadData = useCallback(async () => {
     if (!slaId || !sessionUserId) return;
@@ -103,32 +125,30 @@ export default function SlaDetailPage() {
         title={sla.name}
         description={`Contrat SLA #${sla.id} — ${sla.clientName ?? `client #${sla.clientId}`}`}
         action={
-          canCreateIncident ? (
-            <div className="flex flex-wrap gap-2">
-              {isAdmin && (
-                <Button onClick={() => setServiceModalOpen(true)}>
-                  <Plus className="h-4 w-4" />
-                  Associer un service
-                </Button>
-              )}
+          <div className="flex flex-wrap gap-2">
+            {canManageSla && (
+              <Button onClick={() => openServiceModal()}>
+                <Plus className="h-4 w-4" />
+                Ajouter un service
+              </Button>
+            )}
+            {canCreateIncident && (
               <Button variant="secondary" onClick={() => setIncidentModalOpen(true)}>
                 <Plus className="h-4 w-4" />
                 Nouvel incident
               </Button>
-            </div>
-          ) : isAdmin ? (
-            <Button onClick={() => setServiceModalOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Associer un service
-            </Button>
-          ) : undefined
+            )}
+          </div>
         }
       />
 
       {error && <ErrorBanner message={error} onRetry={loadData} />}
 
-      {canManageSla && (
+      {canManageSlaLifecycle && (
         <SlaLifecycleActions sla={sla} onChanged={loadData} onError={setError} />
+      )}
+      {canRequestApproval && (
+        <SlaApprovalRequestActions sla={sla} onError={setError} />
       )}
 
       <div className="mb-6 mt-4 grid gap-4 md:grid-cols-4">
@@ -151,6 +171,14 @@ export default function SlaDetailPage() {
         <CardHeader
           title="Services associés"
           description={`${services.length} service(s) monitoré(s) pour ce SLA`}
+          action={
+            canManageSla ? (
+              <Button variant="secondary" onClick={() => openServiceModal()}>
+                <Plus className="h-4 w-4" />
+                Ajouter
+              </Button>
+            ) : undefined
+          }
         />
         <CardBody className="overflow-x-auto p-0">
           <table className="min-w-full text-sm">
@@ -159,6 +187,7 @@ export default function SlaDetailPage() {
                 <th className="px-6 py-4 font-medium">Nom</th>
                 <th className="px-6 py-4 font-medium">Statut</th>
                 <th className="px-6 py-4 font-medium">Mis à jour</th>
+                {canManageSla && <th className="px-6 py-4 font-medium">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -169,6 +198,28 @@ export default function SlaDetailPage() {
                     <ServiceStatusBadge status={service.status} />
                   </td>
                   <td className="px-6 py-4 text-muted">{formatDate(service.updatedAt)}</td>
+                  {canManageSla && (
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <div className="inline-flex items-center gap-1.5">
+                        <Button
+                          variant="secondary"
+                          className="!px-2.5 !py-2"
+                          title="Modifier"
+                          onClick={() => openServiceModal(service)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="danger"
+                          className="!px-2.5 !py-2"
+                          title="Supprimer"
+                          onClick={() => handleDeleteService(service)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -177,7 +228,13 @@ export default function SlaDetailPage() {
             <EmptyState
               icon={Server}
               title="Aucun service associé"
-              description="Associez des services techniques à ce SLA pour alimenter les métriques et graphiques."
+              description={
+                isClient
+                  ? "Aucun service n'est actuellement monitoré pour ce SLA."
+                  : canManageSla
+                    ? "Ajoutez des services techniques pour alimenter les métriques et graphiques."
+                    : "Aucun service n'est actuellement monitoré pour ce SLA."
+              }
             />
           )}
         </CardBody>
@@ -204,6 +261,7 @@ export default function SlaDetailPage() {
               <tr>
                 <th className="px-6 py-4 font-medium">Début</th>
                 <th className="px-6 py-4 font-medium">Fin</th>
+                <th className="px-6 py-4 font-medium">Statut</th>
                 <th className="px-6 py-4 font-medium">Sévérité</th>
                 <th className="px-6 py-4 font-medium">Description</th>
               </tr>
@@ -213,7 +271,10 @@ export default function SlaDetailPage() {
                 <tr key={incident.id} className="table-row">
                   <td className="px-6 py-4 text-body">{formatDate(incident.startTime)}</td>
                   <td className="px-6 py-4 text-body">
-                    {incident.endTime ? formatDate(incident.endTime) : "En cours"}
+                    {incident.endTime ? formatDate(incident.endTime) : "—"}
+                  </td>
+                  <td className="px-6 py-4">
+                    <IncidentStatusBadge status={incident.status} />
                   </td>
                   <td className="px-6 py-4">
                     <SeverityBadge severity={incident.severity} />
@@ -234,20 +295,22 @@ export default function SlaDetailPage() {
       </Card>
 
       {canCreateIncident && (
-        <>
-          <IncidentFormModal
-            open={incidentModalOpen}
-            onClose={() => setIncidentModalOpen(false)}
-            onSaved={loadData}
-            defaultSlaId={sla.id}
-          />
-          <ServiceFormModal
-            open={serviceModalOpen}
-            onClose={() => setServiceModalOpen(false)}
-            onSaved={loadData}
-            defaultSlaId={sla.id}
-          />
-        </>
+        <IncidentFormModal
+          open={incidentModalOpen}
+          onClose={() => setIncidentModalOpen(false)}
+          onSaved={loadData}
+          defaultSlaId={sla.id}
+        />
+      )}
+      {canManageSla && (
+        <ServiceFormModal
+          open={serviceModalOpen}
+          onClose={closeServiceModal}
+          onSaved={loadData}
+          service={selectedService}
+          defaultSlaId={sla.id}
+          lockSlaId
+        />
       )}
     </>
   );

@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Pencil, Plus, Siren, Trash2 } from "lucide-react";
+import { CheckCircle2, Eye, Pencil, Plus, Siren } from "lucide-react";
 import { IncidentFormModal } from "@/components/forms/IncidentFormModal";
+import { IncidentWorkflowModal } from "@/components/forms/IncidentWorkflowModal";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
-import { SeverityBadge } from "@/components/ui/Badge";
+import { SeverityBadge, IncidentStatusBadge } from "@/components/ui/Badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -19,13 +20,14 @@ import type { Incident, IncidentSeverity, Project } from "@/types";
 const severities: IncidentSeverity[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
 export default function IncidentsPage() {
-  const { isAdmin, isEmployee, canCreateIncident } = useAuth();
+  const { isAdmin, isClient, isEmployee, isManager, canCreateIncident, canModifyIncident, canAssignIncident } = useAuth();
   const sessionUserId = useSessionUserId();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [workflowOpen, setWorkflowOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [filterSeverity, setFilterSeverity] = useState("");
   const [filterProject, setFilterProject] = useState("");
@@ -68,16 +70,6 @@ export default function IncidentsPage() {
     loadIncidents();
   }, [loadIncidents]);
 
-  async function handleDelete(incident: Incident) {
-    if (!confirm("Supprimer cet incident ?")) return;
-    try {
-      await apiFetch<void>(`/api/incidents/${incident.id}`, { method: "DELETE" });
-      loadIncidents();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Suppression impossible");
-    }
-  }
-
   async function handleClose(incident: Incident) {
     try {
       await apiFetch<Incident>(`/api/incidents/${incident.id}/close`, { method: "PATCH" });
@@ -92,9 +84,13 @@ export default function IncidentsPage() {
       <Header
         title="Incidents"
         description={
-          isEmployee
-            ? "Incidents liés à vos projets et SLA assignés."
-            : "Suivi des incidents impactant vos contrats SLA."
+          isClient
+            ? "Déclarez et consultez les incidents liés à vos projets et SLA."
+            : isEmployee
+              ? "Incidents qui vous sont assignés par votre manager."
+              : isManager
+                ? "Suivi des incidents — assignez un employé pour le traitement."
+                : "Suivi des incidents impactant vos contrats SLA."
         }
         action={
           canCreateIncident ? (
@@ -155,8 +151,12 @@ export default function IncidentsPage() {
 
       <Card>
         <CardHeader
-          title="Tous les incidents"
-          description={`${incidents.length} incident(s) affiché(s)`}
+          title={isEmployee ? "Mes incidents assignés" : "Tous les incidents"}
+          description={
+            isEmployee
+              ? `${incidents.length} incident(s) assigné(s) à vous`
+              : `${incidents.length} incident(s) affiché(s)`
+          }
         />
         <CardBody className="overflow-x-auto p-0">
           {loading ? (
@@ -169,9 +169,13 @@ export default function IncidentsPage() {
                   <th className="px-6 py-4 font-medium">Projet</th>
                   <th className="px-6 py-4 font-medium">Début</th>
                   <th className="px-6 py-4 font-medium">Fin</th>
+                  <th className="px-6 py-4 font-medium">Statut</th>
                   <th className="px-6 py-4 font-medium">Sévérité</th>
+                  <th className="px-6 py-4 font-medium">Assigné à</th>
                   <th className="px-6 py-4 font-medium">Description</th>
-                  {isAdmin && <th className="px-6 py-4 font-medium">Actions</th>}
+                  {(canModifyIncident || canAssignIncident) && (
+                    <th className="px-6 py-4 font-medium">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -181,32 +185,54 @@ export default function IncidentsPage() {
                     <td className="px-6 py-4 text-body">{incident.projectName ?? "—"}</td>
                     <td className="px-6 py-4 text-body">{formatDate(incident.startTime)}</td>
                     <td className="px-6 py-4 text-body">
-                      {incident.endTime ? formatDate(incident.endTime) : "En cours"}
+                      {incident.endTime ? formatDate(incident.endTime) : "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <IncidentStatusBadge status={incident.status} />
                     </td>
                     <td className="px-6 py-4">
                       <SeverityBadge severity={incident.severity} />
                     </td>
+                    <td className="px-6 py-4 text-body">{incident.assigneeName ?? "—"}</td>
                     <td className="max-w-sm px-6 py-4 text-body">{incident.description}</td>
-                    {isAdmin && (
+                    {(canModifyIncident || canAssignIncident) && (
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
-                          {!incident.endTime && (
-                            <Button variant="secondary" onClick={() => handleClose(incident)}>
-                              <CheckCircle2 className="h-4 w-4" />
-                            </Button>
+                          {(canModifyIncident || canAssignIncident) && (
+                            <>
+                              <Button
+                                variant="secondary"
+                                title={canAssignIncident ? "Gérer" : "Traiter"}
+                                onClick={() => {
+                                  setSelectedIncident(incident);
+                                  setWorkflowOpen(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {canModifyIncident && !isEmployee && !incident.endTime && incident.status !== "RESOLVED" && (
+                                <Button
+                                  variant="secondary"
+                                  title="Modifier"
+                                  onClick={() => {
+                                    setSelectedIncident(incident);
+                                    if (isAdmin) {
+                                      setModalOpen(true);
+                                    } else {
+                                      setWorkflowOpen(true);
+                                    }
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {isAdmin && !incident.endTime && (
+                                <Button variant="secondary" onClick={() => handleClose(incident)}>
+                                  <CheckCircle2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </>
                           )}
-                          <Button
-                            variant="secondary"
-                            onClick={() => {
-                              setSelectedIncident(incident);
-                              setModalOpen(true);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="danger" onClick={() => handleDelete(incident)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </td>
                     )}
@@ -218,8 +244,12 @@ export default function IncidentsPage() {
           {!loading && incidents.length === 0 && (
             <EmptyState
               icon={Siren}
-              title="Aucun incident enregistré"
-              description="Les incidents impactent le calcul du score SLA. Créez-en un depuis cette page ou depuis le détail d'un SLA."
+              title="Aucun incident"
+              description={
+                isEmployee
+                  ? "Aucun incident ne vous est assigné pour le moment."
+                  : "Les incidents impactent le calcul du score SLA. Créez-en un depuis cette page ou depuis le détail d'un SLA."
+              }
             />
           )}
         </CardBody>
@@ -229,6 +259,18 @@ export default function IncidentsPage() {
         <IncidentFormModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
+          onSaved={loadIncidents}
+          incident={isAdmin ? selectedIncident : null}
+        />
+      )}
+
+      {selectedIncident && (canModifyIncident || canAssignIncident) && (
+        <IncidentWorkflowModal
+          open={workflowOpen}
+          onClose={() => {
+            setWorkflowOpen(false);
+            setSelectedIncident(null);
+          }}
           onSaved={loadIncidents}
           incident={selectedIncident}
         />

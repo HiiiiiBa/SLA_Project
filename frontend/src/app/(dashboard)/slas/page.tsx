@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Eye, Gauge, Pencil, Plus, Trash2 } from "lucide-react";
+import { SlaApprovalRequestActions } from "@/components/sla/SlaApprovalRequestActions";
 import { SlaFormModal } from "@/components/forms/SlaFormModal";
 import { SlaLifecycleActions } from "@/components/sla/SlaLifecycleActions";
 import { Header } from "@/components/layout/Header";
@@ -18,7 +19,8 @@ import { formatDate, formatPercent } from "@/lib/utils";
 import type { Sla } from "@/types";
 
 export default function SlasPage() {
-  const { isAdmin, isEmployee, isManager, canManageSla } = useAuth();
+  const { isAdmin, isClient, isEmployee, isManager, canManageSla, canManageSlaLifecycle, canRequestApproval } = useAuth();
+  const [success, setSuccess] = useState<string | null>(null);
   const sessionUserId = useSessionUserId();
   const [slas, setSlas] = useState<Sla[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,11 +59,13 @@ export default function SlasPage() {
       <Header
         title="Contrats SLA"
         description={
-          isEmployee
-            ? "SLA des clients liés à vos projets assignés."
-            : isManager
-              ? "SLA de vos clients affectés — création et modification autorisées."
-              : "Liste des accords de niveau de service monitorés et leurs seuils."
+          isClient
+            ? "Consultation de vos contrats SLA (lecture seule)."
+            : isEmployee
+              ? "SLA des clients liés à vos projets assignés."
+              : isManager
+                ? "SLA de vos clients affectés — création et modification autorisées."
+                : "Liste des accords de niveau de service monitorés et leurs seuils."
         }
         action={
           canManageSla ? (
@@ -79,6 +83,11 @@ export default function SlasPage() {
       />
 
       {error && <ErrorBanner message={error} onRetry={loadSlas} />}
+      {success && (
+        <div className="mb-4 rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+          {success}
+        </div>
+      )}
 
       <Card>
         <CardHeader
@@ -146,12 +155,25 @@ export default function SlasPage() {
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             )}
-                            <SlaLifecycleActions
-                              sla={sla}
-                              onChanged={loadSlas}
-                              onError={setError}
-                              compact
-                            />
+                            {canManageSlaLifecycle && (
+                              <SlaLifecycleActions
+                                sla={sla}
+                                onChanged={loadSlas}
+                                onError={setError}
+                                compact
+                              />
+                            )}
+                            {canRequestApproval && (
+                              <SlaApprovalRequestActions
+                                sla={sla}
+                                onError={setError}
+                                onSuccess={() => {
+                                  setSuccess(`Demande de suppression envoyée pour le SLA "${sla.name}".`);
+                                  setError(null);
+                                }}
+                                compact
+                              />
+                            )}
                           </>
                         )}
                       </div>

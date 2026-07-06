@@ -6,12 +6,12 @@ import {
   Activity,
   AlertTriangle,
   Building2,
+  ClipboardCheck,
   FileText,
   FolderKanban,
   Gauge,
   LayoutDashboard,
   LogOut,
-  Server,
   Settings,
   Siren,
   Users,
@@ -22,19 +22,19 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/slas", label: "SLA", icon: Gauge },
-  { href: "/services", label: "Services", icon: Server },
   { href: "/incidents", label: "Incidents", icon: Siren },
   { href: "/projects", label: "Projets", icon: FolderKanban },
-  { href: "/teams", label: "Équipes", icon: Users },
+  { href: "/teams", label: "Équipes", icon: Users, hideForClient: true, hideForEmployee: true },
   { href: "/alerts", label: "Alertes", icon: AlertTriangle },
   { href: "/reports", label: "Rapports", icon: FileText, hideForEmployee: true },
   { href: "/clients", label: "Clients", icon: Building2, clientsOnly: true },
+  { href: "/admin/approvals", label: "Validations", icon: ClipboardCheck, adminOnly: true },
   { href: "/admin", label: "Administration", icon: Settings, adminOnly: true },
 ];
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { user, logout, isAdmin, isEmployee, canViewClients } = useAuth();
+  const { user, logout, isAdmin, isClient, isEmployee, isManager, canViewClients } = useAuth();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 flex w-72 flex-col border-r border-border bg-card/95 backdrop-blur-xl text-foreground lg:block">
@@ -53,7 +53,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           .filter((item) => {
             if (item.adminOnly && !isAdmin) return false;
             if ("clientsOnly" in item && item.clientsOnly && !canViewClients) return false;
+            if ("hideForClient" in item && item.hideForClient && isClient) return false;
             if ("hideForEmployee" in item && item.hideForEmployee && isEmployee) return false;
+            if ("hideForManager" in item && item.hideForManager && isManager) return false;
             return true;
           })
           .map((item) => {

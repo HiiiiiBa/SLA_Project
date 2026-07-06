@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Activity, Menu, X } from "lucide-react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { RoleRouteGuard } from "@/components/auth/RoleRouteGuard";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -51,7 +52,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle variant="icon" />
           </div>
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 animate-fade-in">
-            <div key={sessionKey}>{children}</div>
+            <div key={sessionKey}>
+              <RoleRouteGuard>{children}</RoleRouteGuard>
+            </div>
           </div>
         </main>
         </div>

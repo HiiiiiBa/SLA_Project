@@ -88,6 +88,7 @@ public class ProjectServiceImpl implements ProjectService {
     public List<ProjectResponse> findByTeamId(Long teamId) {
         employeeScopeService.assertTeamAccess(teamId);
         managerScopeService.assertTeamAccess(teamId);
+        clientScopeService.assertTeamAccess(teamId);
         if (!teamRepository.existsById(teamId)) {
             throw new ResourceNotFoundException("Team", "id", teamId);
         }
@@ -97,6 +98,8 @@ public class ProjectServiceImpl implements ProjectService {
                         || employeeScopeService.getAssignedProjectIds().contains(project.getId()))
                 .filter(project -> !managerScopeService.isCurrentUserManager()
                         || managerScopeService.getAssignedClientIds().contains(project.getClient().getId()))
+                .filter(project -> !clientScopeService.isCurrentUserClient()
+                        || clientScopeService.getScopedProjectIds().contains(project.getId()))
                 .map(this::toResponse)
                 .toList();
     }
@@ -106,6 +109,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = findProjectEntity(id);
         employeeScopeService.assertProjectAccess(id);
         managerScopeService.assertProjectAccess(id);
+        clientScopeService.assertProjectAccess(id);
         return toResponse(project);
     }
 

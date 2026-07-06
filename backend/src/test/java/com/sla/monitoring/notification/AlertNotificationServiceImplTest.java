@@ -56,6 +56,9 @@ class AlertNotificationServiceImplTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private AlertRecipientResolver alertRecipientResolver;
+
     @InjectMocks
     private AlertNotificationServiceImpl alertNotificationService;
 
@@ -92,6 +95,8 @@ class AlertNotificationServiceImplTest {
         when(properties.getFromName()).thenReturn("SLA Monitoring");
         when(userRepository.findByRoleAndEnabledTrue(Role.ADMIN))
                 .thenReturn(List.of(User.builder().email("admin@sla.com").build()));
+        when(alertRecipientResolver.resolveRecipientEmails(1L, 2L))
+                .thenReturn(java.util.Set.of("admin@sla.com", "client@acme.com"));
         when(mailSender.createMimeMessage()).thenReturn(new jakarta.mail.internet.MimeMessage(
                 (jakarta.mail.Session) null));
     }
@@ -102,8 +107,9 @@ class AlertNotificationServiceImplTest {
         alertNotificationService.dispatch(10L);
 
         ArgumentCaptor<AlertNotificationMessage> captor = ArgumentCaptor.forClass(AlertNotificationMessage.class);
-        verify(messagingTemplate).convertAndSend(
-                eq(AlertNotificationServiceImpl.ALERTS_TOPIC),
+        verify(messagingTemplate).convertAndSendToUser(
+                eq("admin@sla.com"),
+                eq(AlertNotificationServiceImpl.USER_ALERTS_DESTINATION),
                 captor.capture());
 
         AlertNotificationMessage message = captor.getValue();

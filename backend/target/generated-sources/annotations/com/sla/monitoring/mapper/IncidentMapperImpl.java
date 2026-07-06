@@ -6,12 +6,13 @@ import com.sla.monitoring.dto.response.IncidentResponse;
 import com.sla.monitoring.entity.Incident;
 import com.sla.monitoring.entity.Project;
 import com.sla.monitoring.entity.Sla;
+import com.sla.monitoring.entity.User;
 import javax.annotation.processing.Generated;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-07-04T09:44:38+0100",
+    date = "2026-07-06T09:14:10+0100",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.10 (Oracle Corporation)"
 )
 @Component
@@ -28,15 +29,21 @@ public class IncidentMapperImpl implements IncidentMapper {
         incidentResponse.slaId( incidentSlaId( incident ) );
         incidentResponse.projectId( incidentProjectId( incident ) );
         incidentResponse.projectName( incidentProjectName( incident ) );
+        incidentResponse.assigneeId( incidentAssigneeId( incident ) );
         incidentResponse.id( incident.getId() );
         incidentResponse.startTime( incident.getStartTime() );
         incidentResponse.endTime( incident.getEndTime() );
+        incidentResponse.status( incident.getStatus() );
         incidentResponse.severity( incident.getSeverity() );
         incidentResponse.description( incident.getDescription() );
         incidentResponse.createdAt( incident.getCreatedAt() );
         incidentResponse.updatedAt( incident.getUpdatedAt() );
 
-        return incidentResponse.build();
+        IncidentResponse incidentResponseResult = incidentResponse.build();
+
+        enrichAssignee( incident, incidentResponseResult );
+
+        return incidentResponseResult;
     }
 
     @Override
@@ -88,5 +95,13 @@ public class IncidentMapperImpl implements IncidentMapper {
             return null;
         }
         return project.getName();
+    }
+
+    private Long incidentAssigneeId(Incident incident) {
+        User assignee = incident.getAssignee();
+        if ( assignee == null ) {
+            return null;
+        }
+        return assignee.getId();
     }
 }

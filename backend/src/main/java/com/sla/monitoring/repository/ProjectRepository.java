@@ -56,4 +56,11 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     Optional<Project> findByName(String name);
 
     List<Project> findByStatus(ProjectStatus status);
+
+    @Query("""
+            SELECT DISTINCT p FROM Project p
+            LEFT JOIN FETCH p.assignedMembers
+            WHERE p.sla.id = :slaId
+            """)
+    List<Project> findBySlaIdWithMembers(@Param("slaId") Long slaId);
 }

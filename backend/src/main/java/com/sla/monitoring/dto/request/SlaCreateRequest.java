@@ -3,6 +3,7 @@ package com.sla.monitoring.dto.request;
 import com.sla.monitoring.entity.enums.SlaStatus;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -11,6 +12,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @Builder
@@ -39,4 +42,7 @@ public class SlaCreateRequest {
 
     @NotNull(message = "Client id is required")
     private Long clientId;
+
+    @Valid
+    private List<ServiceDraftRequest> services;
 }

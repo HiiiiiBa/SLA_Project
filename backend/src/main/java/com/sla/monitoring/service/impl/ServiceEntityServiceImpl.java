@@ -37,6 +37,7 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
     @Transactional
     public ServiceEntityResponse createService(ServiceEntityCreateRequest request) {
         validateStatus(request.getStatus());
+        managerScopeService.assertSlaAccess(request.getSlaId());
 
         Sla sla = findSlaById(request.getSlaId());
         Service service = serviceEntityMapper.toEntity(request);
@@ -51,10 +52,12 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
         validateStatus(request.getStatus());
 
         Service service = findServiceEntityById(id);
+        managerScopeService.assertSlaAccess(service.getSla().getId());
         ServiceStatus previousStatus = service.getStatus();
         serviceEntityMapper.updateEntity(request, service);
 
         if (request.getSlaId() != null && !request.getSlaId().equals(service.getSla().getId())) {
+            managerScopeService.assertSlaAccess(request.getSlaId());
             service.setSla(findSlaById(request.getSlaId()));
         }
 
@@ -67,6 +70,7 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
     @Transactional
     public void deleteService(Long id) {
         Service service = findServiceEntityById(id);
+        managerScopeService.assertSlaAccess(service.getSla().getId());
         serviceRepository.delete(service);
     }
 
@@ -137,6 +141,7 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
         validateStatus(request.getStatus());
 
         Service service = findServiceEntityById(id);
+        managerScopeService.assertSlaAccess(service.getSla().getId());
         ServiceStatus previousStatus = service.getStatus();
         service.setStatus(request.getStatus());
 

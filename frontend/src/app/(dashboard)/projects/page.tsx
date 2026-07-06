@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FolderKanban, Pencil, Plus, Trash2 } from "lucide-react";
+import { RequestApprovalButton } from "@/components/approval/RequestApprovalButton";
 import { ProjectFormModal } from "@/components/forms/ProjectFormModal";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
@@ -14,7 +15,8 @@ import { ApiError, apiFetch } from "@/lib/api";
 import type { Project } from "@/types";
 
 export default function ProjectsPage() {
-  const { canManageOrg, isEmployee } = useAuth();
+  const { canManageOrg, isAdmin, canRequestApproval, isClient, isEmployee } = useAuth();
+  const [success, setSuccess] = useState<string | null>(null);
   const sessionUserId = useSessionUserId();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,9 +55,11 @@ export default function ProjectsPage() {
       <Header
         title="Projets"
         description={
-          isEmployee
-            ? "Projets auxquels vous êtes assigné."
-            : "Un client peut avoir plusieurs projets, chacun géré par une équipe et des employés."
+          isClient
+            ? "Consultation de vos projets (lecture seule)."
+            : isEmployee
+              ? "Projets auxquels vous êtes assigné."
+              : "Un client peut avoir plusieurs projets, chacun géré par une équipe et des employés."
         }
         action={
           canManageOrg ? (
@@ -73,6 +77,11 @@ export default function ProjectsPage() {
       />
 
       {error && <ErrorBanner message={error} onRetry={loadProjects} />}
+      {success && (
+        <div className="mb-4 rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+          {success}
+        </div>
+      )}
 
       <Card>
         <CardHeader title="Liste des projets" description={`${projects.length} projet(s)`} />
@@ -120,13 +129,31 @@ export default function ProjectsPage() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="danger"
-                            className="!px-2.5 !py-2"
-                            onClick={() => handleDelete(project)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="danger"
+                              className="!px-2.5 !py-2"
+                              onClick={() => handleDelete(project)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canRequestApproval && (
+                            <RequestApprovalButton
+                              actionType="DELETE_PROJECT"
+                              targetType="PROJECT"
+                              targetId={project.id}
+                              targetLabel={project.name}
+                              confirmMessage={`Demander la suppression du projet "${project.name}" à l'admin ?`}
+                              title="Demander la suppression (validation admin)"
+                              className="!px-2.5 !py-2"
+                              onSuccess={() => {
+                                setSuccess(`Demande envoyée pour le projet "${project.name}".`);
+                                setError(null);
+                              }}
+                              onError={setError}
+                            />
+                          )}
                         </div>
                       </td>
                     )}

@@ -100,7 +100,7 @@ export default function DashboardPage() {
   const activeSlas = slas.filter((sla) => sla.status === "ACTIVE").length;
   const breachedSlas = slas.filter((sla) => sla.status === "BREACHED").length;
   const openAlerts = alerts.filter((alert) => alert.status === "NEW").length;
-  const openIncidents = incidents.filter((incident) => !incident.endTime).length;
+  const openIncidents = incidents.filter((incident) => incident.status !== "RESOLVED").length;
 
   return (
     <>
@@ -268,7 +268,7 @@ export default function DashboardPage() {
                     <p className="mt-2 line-clamp-2 text-sm text-body">
                       {incident.description}
                     </p>
-                    {!incident.endTime && (
+                    {!incident.endTime && incident.status !== "RESOLVED" && (
                       <span className="mt-2 inline-block text-xs font-medium text-warning">
                         En cours
                       </span>

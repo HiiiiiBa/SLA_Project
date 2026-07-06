@@ -5,6 +5,7 @@ export type AlertStatus = "NEW" | "READ" | "RESOLVED";
 export type AlertType = "EMAIL" | "WEB";
 export type ReportFormat = "PDF" | "CSV";
 export type IncidentSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type IncidentStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED";
 export type MetricStatus = "UP" | "DOWN";
 export type ServiceStatus = "UP" | "DOWN";
 export type SimulationScenario = "NORMAL" | "DEGRADED" | "OUTAGE";
@@ -88,6 +89,71 @@ export interface AlertNotification {
   createdAt: string;
 }
 
+export type ApprovalActionType =
+  | "DELETE_PROJECT"
+  | "DELETE_TEAM"
+  | "DELETE_SLA"
+  | "ARCHIVE_SLA"
+  | "ACTIVATE_SLA"
+  | "DEACTIVATE_SLA";
+
+export type ApprovalTargetType = "PROJECT" | "TEAM" | "SLA";
+
+export type ApprovalRequestStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "EXECUTED"
+  | "FAILED";
+
+export type ApprovalNotificationKind = "SUBMITTED" | "APPROVED" | "REJECTED";
+
+export interface ApprovalNotification {
+  requestId: number;
+  kind: ApprovalNotificationKind;
+  actionType: ApprovalActionType;
+  targetType: ApprovalTargetType;
+  targetId: number;
+  targetLabel: string;
+  message: string;
+  status: ApprovalRequestStatus;
+  requesterName?: string;
+  reviewerName?: string;
+  reviewComment?: string;
+  createdAt: string;
+}
+
+export interface ApprovalRequest {
+  id: number;
+  requesterId: number;
+  requesterName: string;
+  requesterEmail: string;
+  actionType: ApprovalActionType;
+  targetType: ApprovalTargetType;
+  targetId: number;
+  targetLabel: string;
+  reason?: string;
+  status: ApprovalRequestStatus;
+  reviewerId?: number;
+  reviewerName?: string;
+  reviewComment?: string;
+  reviewedAt?: string;
+  executedAt?: string;
+  createdAt: string;
+}
+
+export type LiveNotificationItem =
+  | { id: string; source: "alert"; data: AlertNotification }
+  | { id: string; source: "approval"; data: ApprovalNotification };
+
+export interface ApprovalRequestCreatePayload {
+  actionType: ApprovalActionType;
+  targetType: ApprovalTargetType;
+  targetId: number;
+  reason?: string;
+}
+
 export type NotificationChannel = "WEBSOCKET" | "EMAIL";
 export type NotificationDeliveryStatus = "SENT" | "FAILED";
 
@@ -108,13 +174,25 @@ export interface Incident {
   id: number;
   startTime: string;
   endTime?: string;
+  status: IncidentStatus;
   severity: IncidentSeverity;
   description: string;
   slaId: number;
   projectId?: number;
   projectName?: string;
+  assigneeId?: number;
+  assigneeName?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface IncidentComment {
+  id: number;
+  incidentId: number;
+  authorId: number;
+  authorName: string;
+  content: string;
+  createdAt: string;
 }
 
 export interface TeamMember {
@@ -212,6 +290,12 @@ export interface SlaCreateRequest {
   responseTimeLimit: number;
   errorRateLimit: number;
   clientId: number;
+  services?: ServiceDraftRequest[];
+}
+
+export interface ServiceDraftRequest {
+  name: string;
+  status?: ServiceStatus;
 }
 
 export interface SlaUpdateRequest {
@@ -236,6 +320,18 @@ export interface IncidentUpdateRequest {
   severity: IncidentSeverity;
   description: string;
   projectId?: number;
+}
+
+export interface IncidentAssignRequest {
+  assigneeId?: number | null;
+}
+
+export interface IncidentStatusChangeRequest {
+  status: IncidentStatus;
+}
+
+export interface IncidentCommentCreateRequest {
+  content: string;
 }
 
 export interface User {

@@ -72,8 +72,22 @@ public class TeamServiceImpl implements TeamService {
     public List<TeamResponse> findByManagerId(Long managerId) {
         return teamRepository.findByManagerId(managerId).stream()
                 .map(team -> teamRepository.findByIdWithDetails(team.getId()).orElse(team))
+                .filter(this::isTeamVisibleToCurrentUser)
                 .map(this::toResponse)
                 .toList();
+    }
+
+    private boolean isTeamVisibleToCurrentUser(Team team) {
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            return employeeScopeService.getMemberTeamIds().contains(team.getId());
+        }
+        if (clientScopeService.isCurrentUserClient()) {
+            return clientScopeService.getVisibleTeamIds().contains(team.getId());
+        }
+        if (managerScopeService.isCurrentUserManager()) {
+            return managerScopeService.getVisibleTeamIds().contains(team.getId());
+        }
+        return true;
     }
 
     @Override

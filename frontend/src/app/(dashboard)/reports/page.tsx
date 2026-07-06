@@ -14,7 +14,7 @@ import { formatDate, formatScore } from "@/lib/utils";
 import type { Report } from "@/types";
 
 export default function ReportsPage() {
-  const { isAdmin, canDownloadReports } = useAuth();
+  const { isAdmin, isClient, canDownloadReports } = useAuth();
   const sessionUserId = useSessionUserId();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +60,11 @@ export default function ReportsPage() {
     <>
       <Header
         title="Rapports"
-        description="Export PDF/CSV : statut SLA, uptime, incidents, alertes et performance globale."
+        description={
+          isClient
+            ? "Téléchargement des rapports PDF/CSV de vos SLA."
+            : "Export PDF/CSV : statut SLA, uptime, incidents, alertes et performance globale."
+        }
       />
 
       {error && <ErrorBanner message={error} onRetry={loadReports} />}

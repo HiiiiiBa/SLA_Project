@@ -84,9 +84,10 @@ Accès complet à la plateforme.
 | Dashboard | Vue **globale** (tous les clients) |
 | Utilisateurs | CRUD via **Administration** |
 | Clients / projets / équipes | Gestion complète |
-| SLA | Créer, modifier, archiver, supprimer |
+| SLA | Créer, modifier, archiver, supprimer ; gérer les services depuis le détail SLA |
 | Métriques, alertes, incidents | Consultation globale ; créer des incidents |
 | Rapports | Générer, consulter, télécharger PDF/CSV |
+| Validations | Approuver ou refuser les demandes des managers (notification temps réel) |
 
 ### Manager (MANAGER)
 
@@ -96,32 +97,60 @@ Périmètre limité aux clients affectés (`client_managers`).
 |---------|--------|
 | Dashboard | Vue **projets** (pas le dashboard global admin) |
 | Clients | Consultation de ses clients ; gestion projets/SLA |
-| SLA | Créer, modifier, archiver (pas supprimer) |
-| Incidents | Créer (dans son périmètre) |
+| SLA | Créer (avec services optionnels), modifier ; gérer les services (ajouter, modifier, supprimer) depuis le détail SLA ; **demander** la suppression du SLA |
+| Projets / équipes | Créer, modifier ; **demander** la suppression (validation admin) |
+| Incidents | Créer, assigner un employé, suivre la résolution |
 | Rapports | Générer et télécharger PDF/CSV |
-| Interdit | Gestion utilisateurs, clients des autres managers |
+| Notifications | Alertes SLA + résultat des demandes de validation (cloche) |
+| Interdit | Suppression directe de projets/équipes/SLA, gestion utilisateurs, clients des autres managers |
 
 ### Client (CLIENT)
 
-Lecture seule sur son organisation (compte lié à l’email client, ex. `client@acme.com`).
+Accès limité à son organisation (compte lié à l’email client, ex. `client@acme.com`).
+
+**Pages accessibles :**
+
+| Page | Droits |
+|------|--------|
+| Tableau de bord | Ses statistiques uniquement (projets et SLA) |
+| Projets | Consultation de ses projets |
+| SLA (liste et détail) | Consultation ; dans le détail, services couverts et état (UP/DOWN/DEGRADED) en lecture seule |
+| Incidents | Création et consultation (pas de modification ni suppression) |
+| Alertes | Consultation uniquement |
+| Rapports | Téléchargement PDF/CSV |
+
+**Pages interdites :** Administration, Clients, Équipes, Services (pas de création ni modification de services ; pas d’accès à la page de gestion des services).
 
 | Domaine | Droits |
 |---------|--------|
 | Dashboard | Ses projets et SLA |
-| SLA, métriques, alertes, incidents | Consultation |
+| SLA, métriques, alertes | Consultation |
+| Incidents | Création et consultation |
 | Rapports | Télécharger PDF/CSV uniquement |
-| Interdit | Gestion, création d’incidents, génération de rapports |
+| Interdit | Gestion, modification/suppression d’incidents, génération de rapports, pages admin/org |
 
 ### Employé (EMPLOYEE)
 
 Périmètre = projets assignés.
 
+**Pages accessibles :**
+
+| Page | Droits |
+|------|--------|
+| Tableau de bord | Projets et SLA assignés |
+| Projets | Consultation |
+| SLA (liste et détail) | Consultation ; services associés visibles dans le détail SLA (lecture seule) |
+| Incidents | Incidents assignés uniquement ; mise à jour, commentaires, résolution |
+| Alertes | Consultation |
+
+**Pages interdites :** Administration, Clients, Équipes, Services, Rapports.
+
 | Domaine | Droits |
 |---------|--------|
 | Dashboard | Projets assignés |
-| SLA, métriques, alertes, incidents | Consultation filtrée |
-| Incidents | **Créer** sur ses projets/SLA |
-| Interdit | Gestion, rapports (pas de PDF/CSV) |
+| SLA, métriques, alertes | Consultation filtrée |
+| Incidents | Mettre à jour la description, commenter, résoudre (**RESOLVED**) — assignation par le manager |
+| Interdit | Création d’incidents, auto-assignation, page Services, gestion SLA/services/projets, administration, rapports |
 
 ### Vue manager (MANAGER) — démo
 

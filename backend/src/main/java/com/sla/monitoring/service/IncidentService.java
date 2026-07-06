@@ -1,5 +1,8 @@
 package com.sla.monitoring.service;
 
+import com.sla.monitoring.dto.request.IncidentAssignRequest;
+import com.sla.monitoring.dto.request.IncidentStatusChangeRequest;
+import com.sla.monitoring.dto.request.IncidentCreateRequest;
 import com.sla.monitoring.dto.request.IncidentCreateRequest;
 import com.sla.monitoring.dto.request.IncidentUpdateRequest;
 import com.sla.monitoring.dto.response.IncidentResponse;
@@ -15,7 +18,9 @@ public interface IncidentService {
 
     IncidentResponse closeIncident(Long id);
 
-    void deleteIncident(Long id);
+    IncidentResponse assignIncident(Long id, IncidentAssignRequest request);
+
+    IncidentResponse changeStatus(Long id, IncidentStatusChangeRequest request);
 
     List<IncidentResponse> findAll();
 

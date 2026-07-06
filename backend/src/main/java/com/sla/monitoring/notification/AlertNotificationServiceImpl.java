@@ -36,6 +36,7 @@ import java.util.Set;
 public class AlertNotificationServiceImpl implements AlertNotificationService {
 
     public static final String ALERTS_TOPIC = "/topic/alerts";
+    public static final String USER_ALERTS_DESTINATION = "/queue/alerts";
 
     private final JavaMailSender mailSender;
     private final SimpMessagingTemplate messagingTemplate;
@@ -43,6 +44,7 @@ public class AlertNotificationServiceImpl implements AlertNotificationService {
     private final UserRepository userRepository;
     private final AlertRepository alertRepository;
     private final NotificationService notificationService;
+    private final AlertRecipientResolver alertRecipientResolver;
 
     @Override
     @Async
@@ -58,7 +60,7 @@ public class AlertNotificationServiceImpl implements AlertNotificationService {
         AlertNotificationMessage message = toMessage(alert, sla, client);
 
         if (properties.isWebsocketEnabled()) {
-            publishWebSocket(message);
+            publishWebSocket(message, client.getId());
         }
 
         if (shouldSendEmail(alert.getType())) {
@@ -66,25 +68,35 @@ public class AlertNotificationServiceImpl implements AlertNotificationService {
         }
     }
 
-    private void publishWebSocket(AlertNotificationMessage message) {
+    private void publishWebSocket(AlertNotificationMessage message, Long clientId) {
+        Set<String> recipients = alertRecipientResolver.resolveRecipientEmails(clientId, message.getSlaId());
+        if (recipients.isEmpty()) {
+            log.warn("No WebSocket recipients for alert id={}, slaId={}", message.getAlertId(), message.getSlaId());
+            return;
+        }
+
+        String recipientSummary = String.join(", ", recipients);
         try {
-            messagingTemplate.convertAndSend(ALERTS_TOPIC, message);
+            for (String email : recipients) {
+                messagingTemplate.convertAndSendToUser(email, USER_ALERTS_DESTINATION, message);
+            }
             notificationService.record(
                     message.getAlertId(),
                     NotificationChannel.WEBSOCKET,
                     NotificationStatus.SENT,
-                    "broadcast",
+                    recipientSummary,
                     message.getMessage(),
                     message.getSlaId(),
                     message.getSlaName(),
                     message.getClientName());
-            log.info("WebSocket alert published: alertId={}, slaId={}", message.getAlertId(), message.getSlaId());
+            log.info("WebSocket alert published to {} recipient(s): alertId={}, slaId={}",
+                    recipients.size(), message.getAlertId(), message.getSlaId());
         } catch (Exception ex) {
             notificationService.record(
                     message.getAlertId(),
                     NotificationChannel.WEBSOCKET,
                     NotificationStatus.FAILED,
-                    "broadcast",
+                    recipientSummary,
                     message.getMessage(),
                     message.getSlaId(),
                     message.getSlaName(),

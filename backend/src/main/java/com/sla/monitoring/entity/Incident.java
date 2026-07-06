@@ -2,6 +2,7 @@ package com.sla.monitoring.entity;
 
 import com.sla.monitoring.audit.BaseAuditEntity;
 import com.sla.monitoring.entity.enums.IncidentSeverity;
+import com.sla.monitoring.entity.enums.IncidentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -29,7 +30,9 @@ import java.time.LocalDateTime;
         @Index(name = "idx_incidents_sla_id", columnList = "sla_id"),
         @Index(name = "idx_incidents_project_id", columnList = "project_id"),
         @Index(name = "idx_incidents_severity", columnList = "severity"),
-        @Index(name = "idx_incidents_start_time", columnList = "start_time")
+        @Index(name = "idx_incidents_start_time", columnList = "start_time"),
+        @Index(name = "idx_incidents_assignee_id", columnList = "assignee_id"),
+        @Index(name = "idx_incidents_status", columnList = "status")
 })
 @Getter
 @Setter
@@ -52,6 +55,11 @@ public class Incident extends BaseAuditEntity {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
+    private IncidentStatus status;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private IncidentSeverity severity;
 
     @NotBlank
@@ -65,4 +73,8 @@ public class Incident extends BaseAuditEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignee_id")
+    private User assignee;
 }

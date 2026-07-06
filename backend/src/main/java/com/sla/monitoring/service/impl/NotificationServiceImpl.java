@@ -5,12 +5,16 @@ import com.sla.monitoring.entity.Notification;
 import com.sla.monitoring.entity.enums.NotificationChannel;
 import com.sla.monitoring.entity.enums.NotificationStatus;
 import com.sla.monitoring.repository.NotificationRepository;
+import com.sla.monitoring.service.ClientScopeService;
+import com.sla.monitoring.service.EmployeeScopeService;
+import com.sla.monitoring.service.ManagerScopeService;
 import com.sla.monitoring.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -18,13 +22,35 @@ import java.util.List;
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final EmployeeScopeService employeeScopeService;
+    private final ManagerScopeService managerScopeService;
+    private final ClientScopeService clientScopeService;
 
     @Override
     public List<NotificationResponse> findAll(NotificationChannel channel) {
         List<Notification> notifications = channel == null
                 ? notificationRepository.findAllByOrderByCreatedAtDesc()
                 : notificationRepository.findByChannelOrderByCreatedAtDesc(channel);
-        return notifications.stream().map(this::toResponse).toList();
+        return filterVisible(notifications).stream().map(this::toResponse).toList();
+    }
+
+    private List<Notification> filterVisible(List<Notification> notifications) {
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            return filterBySlaIds(notifications, employeeScopeService.getScopedSlaIds());
+        }
+        if (clientScopeService.isCurrentUserClient()) {
+            return filterBySlaIds(notifications, clientScopeService.getScopedSlaIds());
+        }
+        if (managerScopeService.isCurrentUserManager()) {
+            return filterBySlaIds(notifications, managerScopeService.getScopedSlaIds());
+        }
+        return notifications;
+    }
+
+    private List<Notification> filterBySlaIds(List<Notification> notifications, Set<Long> slaIds) {
+        return notifications.stream()
+                .filter(notification -> notification.getSlaId() != null && slaIds.contains(notification.getSlaId()))
+                .toList();
     }
 
     @Override

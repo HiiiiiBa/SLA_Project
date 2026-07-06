@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.sla.monitoring.notification.AlertNotificationServiceImplTest
 -------------------------------------------------------------------------------
-Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.073 s -- in com.sla.monitoring.notification.AlertNotificationServiceImplTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.467 s -- in com.sla.monitoring.notification.AlertNotificationServiceImplTest

@@ -1,10 +1,15 @@
 package com.sla.monitoring.controller;
 
 import com.sla.monitoring.dto.ApiResponse;
+import com.sla.monitoring.dto.request.IncidentAssignRequest;
 import com.sla.monitoring.dto.request.IncidentCreateRequest;
+import com.sla.monitoring.dto.request.IncidentCommentCreateRequest;
+import com.sla.monitoring.dto.request.IncidentStatusChangeRequest;
 import com.sla.monitoring.dto.request.IncidentUpdateRequest;
+import com.sla.monitoring.dto.response.IncidentCommentResponse;
 import com.sla.monitoring.dto.response.IncidentResponse;
 import com.sla.monitoring.entity.enums.IncidentSeverity;
+import com.sla.monitoring.service.IncidentCommentService;
 import com.sla.monitoring.service.IncidentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -13,7 +18,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,6 +41,7 @@ import java.util.List;
 public class IncidentController {
 
     private final IncidentService incidentService;
+    private final IncidentCommentService incidentCommentService;
 
     @GetMapping
     @Operation(summary = "Get incidents (all, open, or filtered by severity)")
@@ -91,10 +96,37 @@ public class IncidentController {
         return ResponseEntity.ok(ApiResponse.success("Incident closed successfully", response));
     }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete an incident")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
-        incidentService.deleteIncident(id);
-        return ResponseEntity.ok(ApiResponse.success("Incident deleted successfully", null));
+    @PatchMapping("/{id}/assign")
+    @Operation(summary = "Assign or release an incident")
+    public ResponseEntity<ApiResponse<IncidentResponse>> assign(
+            @PathVariable Long id,
+            @RequestBody IncidentAssignRequest request) {
+        IncidentResponse response = incidentService.assignIncident(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Incident assignment updated", response));
+    }
+
+    @PatchMapping("/{id}/status")
+    @Operation(summary = "Change incident status")
+    public ResponseEntity<ApiResponse<IncidentResponse>> changeStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody IncidentStatusChangeRequest request) {
+        IncidentResponse response = incidentService.changeStatus(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Incident status updated", response));
+    }
+
+    @GetMapping("/{id}/comments")
+    @Operation(summary = "List comments for an incident")
+    public ResponseEntity<ApiResponse<List<IncidentCommentResponse>>> listComments(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(incidentCommentService.findByIncidentId(id)));
+    }
+
+    @PostMapping("/{id}/comments")
+    @Operation(summary = "Add a comment to an incident")
+    public ResponseEntity<ApiResponse<IncidentCommentResponse>> addComment(
+            @PathVariable Long id,
+            @Valid @RequestBody IncidentCommentCreateRequest request) {
+        IncidentCommentResponse response = incidentCommentService.addComment(id, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Comment added successfully", response));
     }
 }

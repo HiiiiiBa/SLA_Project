@@ -29,4 +29,11 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
             WHERE m.id = :managerId
             """)
     List<Long> findClientIdsByManagerId(@Param("managerId") Long managerId);
+
+    @Query("""
+            SELECT DISTINCT c FROM Client c
+            LEFT JOIN FETCH c.managers
+            WHERE c.id = :id
+            """)
+    Optional<Client> findByIdWithManagers(@Param("id") Long id);
 }

@@ -7,12 +7,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useAlertsWebSocket } from "@/hooks/useAlertsWebSocket";
-import type { AlertNotification } from "@/types";
+import { useAppWebSocket } from "@/hooks/useAppWebSocket";
+import type { AlertNotification, ApprovalNotification, LiveNotificationItem } from "@/types";
 
 interface NotificationContextValue {
   connected: boolean;
-  liveNotifications: AlertNotification[];
+  liveNotifications: LiveNotificationItem[];
   clearLive: () => void;
 }
 
@@ -20,13 +20,35 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [connected, setConnected] = useState(false);
-  const [liveNotifications, setLiveNotifications] = useState<AlertNotification[]>([]);
+  const [liveNotifications, setLiveNotifications] = useState<LiveNotificationItem[]>([]);
 
-  const handleAlert = useCallback((notification: AlertNotification) => {
-    setLiveNotifications((current) => [notification, ...current].slice(0, 12));
+  const pushNotification = useCallback((item: LiveNotificationItem) => {
+    setLiveNotifications((current) => [item, ...current].slice(0, 20));
   }, []);
 
-  useAlertsWebSocket(handleAlert, { onConnectionChange: setConnected });
+  const handleAlert = useCallback(
+    (notification: AlertNotification) => {
+      pushNotification({
+        id: `alert-${notification.alertId}-${notification.createdAt}`,
+        source: "alert",
+        data: notification,
+      });
+    },
+    [pushNotification],
+  );
+
+  const handleApproval = useCallback(
+    (notification: ApprovalNotification) => {
+      pushNotification({
+        id: `approval-${notification.requestId}-${notification.kind}-${notification.createdAt}`,
+        source: "approval",
+        data: notification,
+      });
+    },
+    [pushNotification],
+  );
+
+  useAppWebSocket(handleAlert, handleApproval, { onConnectionChange: setConnected });
 
   const clearLive = useCallback(() => setLiveNotifications([]), []);
 

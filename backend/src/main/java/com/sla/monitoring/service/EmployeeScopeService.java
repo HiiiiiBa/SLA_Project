@@ -113,15 +113,32 @@ public class EmployeeScopeService {
         if (!isCurrentUserEmployee()) {
             return true;
         }
-        if (incident.getProject() != null) {
-            return getAssignedProjectIds().contains(incident.getProject().getId());
+        if (incident.getAssignee() == null) {
+            return false;
         }
-        return incident.getSla() != null && getScopedSlaIds().contains(incident.getSla().getId());
+        return getCurrentUserId().equals(incident.getAssignee().getId());
     }
 
     public void assertIncidentAccess(Incident incident) {
         if (!isIncidentVisible(incident)) {
             throw new ForbiddenException("Access denied to this incident");
+        }
+    }
+
+    public boolean canManageIncident(Incident incident) {
+        if (!isCurrentUserEmployee()) {
+            return true;
+        }
+        if (incident.getAssignee() == null) {
+            return false;
+        }
+        return getCurrentUserId().equals(incident.getAssignee().getId());
+    }
+
+    public void assertCanManageIncident(Incident incident) {
+        assertIncidentAccess(incident);
+        if (!canManageIncident(incident)) {
+            throw new ForbiddenException("This incident is assigned to another user");
         }
     }
 }

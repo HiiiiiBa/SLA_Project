@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { getStoredAuth } from "@/lib/auth-storage";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import type { AlertNotification } from "@/types";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:8080/ws";
@@ -20,10 +21,11 @@ export function useAlertsWebSocket(
   callbackRef.current = onAlert;
   const connectionCallbackRef = useRef(options?.onConnectionChange);
   connectionCallbackRef.current = options?.onConnectionChange;
+  const sessionUserId = useSessionUserId();
 
   useEffect(() => {
     const auth = getStoredAuth();
-    if (!auth?.accessToken) return;
+    if (!auth?.accessToken || !sessionUserId) return;
 
     const client = new Client({
       webSocketFactory: () => new SockJS(WS_URL),
@@ -33,7 +35,7 @@ export function useAlertsWebSocket(
       reconnectDelay: 5000,
       onConnect: () => {
         connectionCallbackRef.current?.(true);
-        client.subscribe("/topic/alerts", (message) => {
+        client.subscribe("/user/queue/alerts", (message) => {
           try {
             const payload = JSON.parse(message.body) as AlertNotification;
             callbackRef.current(payload);
@@ -53,5 +55,5 @@ export function useAlertsWebSocket(
       connectionCallbackRef.current?.(false);
       client.deactivate();
     };
-  }, []);
+  }, [sessionUserId]);
 }

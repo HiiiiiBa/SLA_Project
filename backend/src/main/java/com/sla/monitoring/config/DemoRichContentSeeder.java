@@ -14,6 +14,7 @@ import com.sla.monitoring.entity.User;
 import com.sla.monitoring.entity.enums.AlertStatus;
 import com.sla.monitoring.entity.enums.AlertType;
 import com.sla.monitoring.entity.enums.IncidentSeverity;
+import com.sla.monitoring.entity.enums.IncidentStatus;
 import com.sla.monitoring.entity.enums.MetricStatus;
 import com.sla.monitoring.entity.enums.NotificationChannel;
 import com.sla.monitoring.entity.enums.NotificationStatus;
@@ -423,6 +424,7 @@ public class DemoRichContentSeeder implements CommandLineRunner {
                         .description("Pic de latence sur l'API Gateway lors du lancement marketing (+40 % de trafic).")
                         .startTime(now.minusDays(5).minusHours(3))
                         .endTime(now.minusDays(5).minusHours(1))
+                        .status(IncidentStatus.RESOLVED)
                         .build(),
                 Incident.builder()
                         .sla(acmePayment)
@@ -430,6 +432,7 @@ public class DemoRichContentSeeder implements CommandLineRunner {
                         .description("Dégradation du service Fraud Detection — taux d'erreur au-dessus du seuil SLA.")
                         .startTime(now.minusDays(2).minusHours(6))
                         .endTime(null)
+                        .status(IncidentStatus.IN_PROGRESS)
                         .build(),
                 Incident.builder()
                         .sla(techApi)
@@ -437,6 +440,7 @@ public class DemoRichContentSeeder implements CommandLineRunner {
                         .description("Panne majeure sur REST API : indisponibilité totale pendant 2 h 15.")
                         .startTime(now.minusDays(1).minusHours(8))
                         .endTime(now.minusDays(1).minusHours(6))
+                        .status(IncidentStatus.RESOLVED)
                         .build(),
                 Incident.builder()
                         .sla(techApi)
@@ -444,6 +448,7 @@ public class DemoRichContentSeeder implements CommandLineRunner {
                         .description("Saturation du cache Redis — temps de réponse multiplié par 4.")
                         .startTime(now.minusHours(12))
                         .endTime(now.minusHours(9))
+                        .status(IncidentStatus.RESOLVED)
                         .build(),
                 Incident.builder()
                         .sla(retailShop)
@@ -451,6 +456,7 @@ public class DemoRichContentSeeder implements CommandLineRunner {
                         .description("Ralentissement du moteur de recherche lors du Black Friday preview.")
                         .startTime(now.minusDays(3))
                         .endTime(now.minusDays(3).plusHours(2))
+                        .status(IncidentStatus.RESOLVED)
                         .build(),
                 Incident.builder()
                         .sla(acmeProd)
@@ -458,6 +464,7 @@ public class DemoRichContentSeeder implements CommandLineRunner {
                         .description("Maintenance corrective sur le cluster base de données — failover réussi.")
                         .startTime(now.minusDays(10))
                         .endTime(now.minusDays(10).plusHours(1))
+                        .status(IncidentStatus.RESOLVED)
                         .build()
         ));
     }

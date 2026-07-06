@@ -1,10 +1,12 @@
 package com.sla.monitoring.service.impl;
 
+import com.sla.monitoring.dto.request.ServiceDraftRequest;
 import com.sla.monitoring.dto.request.SlaCreateRequest;
 import com.sla.monitoring.dto.request.SlaUpdateRequest;
 import com.sla.monitoring.dto.response.SlaResponse;
 import com.sla.monitoring.entity.Client;
 import com.sla.monitoring.entity.Sla;
+import com.sla.monitoring.entity.enums.ServiceStatus;
 import com.sla.monitoring.entity.enums.SlaStatus;
 import com.sla.monitoring.exception.BusinessException;
 import com.sla.monitoring.exception.ResourceNotFoundException;
@@ -46,7 +48,30 @@ public class SlaServiceImpl implements SlaService {
         Sla sla = slaMapper.toEntity(request);
         sla.setClient(client);
 
-        return enrichResponse(slaRepository.save(sla));
+        Sla saved = slaRepository.save(sla);
+        createServicesForSla(saved, request.getServices());
+        return enrichResponse(saved);
+    }
+
+    private void createServicesForSla(Sla sla, java.util.List<ServiceDraftRequest> services) {
+        if (services == null || services.isEmpty()) {
+            return;
+        }
+        for (ServiceDraftRequest draft : services) {
+            if (draft.getName() == null || draft.getName().isBlank()) {
+                continue;
+            }
+            ServiceStatus status = draft.getStatus() != null ? draft.getStatus() : ServiceStatus.UP;
+            if (status != ServiceStatus.UP && status != ServiceStatus.DOWN) {
+                throw new BusinessException("Service status must be UP or DOWN");
+            }
+            com.sla.monitoring.entity.Service service = com.sla.monitoring.entity.Service.builder()
+                    .name(draft.getName().trim())
+                    .status(status)
+                    .sla(sla)
+                    .build();
+            serviceRepository.save(service);
+        }
     }
 
     @Override

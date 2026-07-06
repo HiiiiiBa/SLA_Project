@@ -21,11 +21,19 @@ interface ServiceFormModalProps {
   onSaved: () => void;
   service?: ServiceEntity | null;
   defaultSlaId?: number;
+  lockSlaId?: boolean;
 }
 
 const statuses: ServiceStatus[] = ["UP", "DOWN"];
 
-export function ServiceFormModal({ open, onClose, onSaved, service, defaultSlaId }: ServiceFormModalProps) {
+export function ServiceFormModal({
+  open,
+  onClose,
+  onSaved,
+  service,
+  defaultSlaId,
+  lockSlaId = false,
+}: ServiceFormModalProps) {
   const isEdit = Boolean(service);
   const [slas, setSlas] = useState<Sla[]>([]);
   const [name, setName] = useState("");
@@ -45,7 +53,7 @@ export function ServiceFormModal({ open, onClose, onSaved, service, defaultSlaId
     setStatus(service?.status ?? "UP");
     setSlaId(service?.slaId ? String(service.slaId) : defaultSlaId ? String(defaultSlaId) : "");
     setError("");
-  }, [open, service]);
+  }, [open, service, defaultSlaId]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -95,7 +103,7 @@ export function ServiceFormModal({ open, onClose, onSaved, service, defaultSlaId
           <Label htmlFor="service-name">Nom</Label>
           <Input id="service-name" value={name} onChange={(e) => setName(e.target.value)} required />
         </div>
-        {!isEdit ? (
+        {!isEdit && !lockSlaId ? (
           <div className="space-y-2">
             <Label htmlFor="service-sla">SLA</Label>
             <Select id="service-sla" value={slaId} onChange={(e) => setSlaId(e.target.value)} required>
@@ -104,6 +112,13 @@ export function ServiceFormModal({ open, onClose, onSaved, service, defaultSlaId
                 <option key={sla.id} value={sla.id}>{sla.name}</option>
               ))}
             </Select>
+          </div>
+        ) : lockSlaId ? (
+          <div className="space-y-2">
+            <Label>SLA</Label>
+            <p className="rounded-lg border border-border bg-card/60 px-3 py-2 text-sm text-body">
+              {slas.find((sla) => String(sla.id) === slaId)?.name ?? `SLA #${slaId}`}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">

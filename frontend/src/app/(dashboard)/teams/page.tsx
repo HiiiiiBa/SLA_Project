@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { RequestApprovalButton } from "@/components/approval/RequestApprovalButton";
 import { TeamFormModal } from "@/components/forms/TeamFormModal";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
@@ -14,7 +15,8 @@ import { ApiError, apiFetch } from "@/lib/api";
 import type { Team } from "@/types";
 
 export default function TeamsPage() {
-  const { canManageOrg, isEmployee } = useAuth();
+  const { canManageOrg, isAdmin, canRequestApproval, isEmployee } = useAuth();
+  const [success, setSuccess] = useState<string | null>(null);
   const sessionUserId = useSessionUserId();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,11 @@ export default function TeamsPage() {
       />
 
       {error && <ErrorBanner message={error} onRetry={loadTeams} />}
+      {success && (
+        <div className="mb-4 rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+          {success}
+        </div>
+      )}
 
       <Card>
         <CardHeader title="Liste des équipes" description={`${teams.length} équipe(s)`} />
@@ -116,13 +123,31 @@ export default function TeamsPage() {
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="danger"
-                            className="!px-2.5 !py-2"
-                            onClick={() => handleDelete(team)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="danger"
+                              className="!px-2.5 !py-2"
+                              onClick={() => handleDelete(team)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canRequestApproval && (
+                            <RequestApprovalButton
+                              actionType="DELETE_TEAM"
+                              targetType="TEAM"
+                              targetId={team.id}
+                              targetLabel={team.name}
+                              confirmMessage={`Demander la suppression de l'équipe "${team.name}" à l'admin ?`}
+                              title="Demander la suppression (validation admin)"
+                              className="!px-2.5 !py-2"
+                              onSuccess={() => {
+                                setSuccess(`Demande envoyée pour l'équipe "${team.name}".`);
+                                setError(null);
+                              }}
+                              onError={setError}
+                            />
+                          )}
                         </div>
                       </td>
                     )}

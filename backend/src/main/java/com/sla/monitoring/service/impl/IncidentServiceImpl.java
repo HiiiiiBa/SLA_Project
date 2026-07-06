@@ -1,18 +1,25 @@
 package com.sla.monitoring.service.impl;
 
+import com.sla.monitoring.dto.request.IncidentAssignRequest;
 import com.sla.monitoring.dto.request.IncidentCreateRequest;
+import com.sla.monitoring.dto.request.IncidentStatusChangeRequest;
 import com.sla.monitoring.dto.request.IncidentUpdateRequest;
 import com.sla.monitoring.dto.response.IncidentResponse;
 import com.sla.monitoring.entity.Incident;
 import com.sla.monitoring.entity.Project;
 import com.sla.monitoring.entity.Sla;
+import com.sla.monitoring.entity.User;
 import com.sla.monitoring.entity.enums.IncidentSeverity;
+import com.sla.monitoring.entity.enums.IncidentStatus;
+import com.sla.monitoring.entity.enums.Role;
 import com.sla.monitoring.exception.BusinessException;
+import com.sla.monitoring.exception.ForbiddenException;
 import com.sla.monitoring.exception.ResourceNotFoundException;
 import com.sla.monitoring.mapper.IncidentMapper;
 import com.sla.monitoring.repository.IncidentRepository;
 import com.sla.monitoring.repository.ProjectRepository;
 import com.sla.monitoring.repository.SlaRepository;
+import com.sla.monitoring.repository.UserRepository;
 import com.sla.monitoring.service.ClientScopeService;
 import com.sla.monitoring.service.EmployeeScopeService;
 import com.sla.monitoring.service.IncidentService;
@@ -32,6 +39,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final IncidentRepository incidentRepository;
     private final SlaRepository slaRepository;
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
     private final IncidentMapper incidentMapper;
     private final EmployeeScopeService employeeScopeService;
     private final ManagerScopeService managerScopeService;
@@ -43,14 +51,19 @@ public class IncidentServiceImpl implements IncidentService {
         Sla sla = findSlaById(request.getSlaId());
         employeeScopeService.assertSlaAccess(sla.getId());
         managerScopeService.assertSlaAccess(sla.getId());
+        clientScopeService.assertSlaAccess(sla.getId());
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            throw new ForbiddenException("Employees cannot create incidents");
+        }
         if (request.getProjectId() != null) {
-            employeeScopeService.assertProjectAccess(request.getProjectId());
             managerScopeService.assertProjectAccess(request.getProjectId());
+            clientScopeService.assertProjectAccess(request.getProjectId());
         }
 
         Incident incident = incidentMapper.toEntity(request);
         incident.setSla(sla);
         incident.setProject(resolveProject(request.getProjectId()));
+        incident.setStatus(IncidentStatus.OPEN);
 
         return incidentMapper.toResponse(incidentRepository.save(incident));
     }
@@ -59,32 +72,144 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponse updateIncident(Long id, IncidentUpdateRequest request) {
         Incident incident = findIncidentEntityById(id);
+        assertCanMutateIncident(incident);
+        if (incident.getStatus() == IncidentStatus.RESOLVED) {
+            throw new BusinessException("Resolved incidents cannot be modified");
+        }
         validateIncidentDates(request.getStartTime(), request.getEndTime());
 
-        incidentMapper.updateEntity(request, incident);
-        incident.setProject(resolveProject(request.getProjectId()));
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            incident.setDescription(request.getDescription());
+        } else {
+            if (request.getProjectId() != null) {
+                employeeScopeService.assertProjectAccess(request.getProjectId());
+                managerScopeService.assertProjectAccess(request.getProjectId());
+                clientScopeService.assertProjectAccess(request.getProjectId());
+            }
+            incidentMapper.updateEntity(request, incident);
+            incident.setProject(resolveProject(request.getProjectId()));
+            syncResolvedState(incident, request.getEndTime());
+        }
 
         return incidentMapper.toResponse(incidentRepository.save(incident));
+    }
+
+    private void syncResolvedState(Incident incident, LocalDateTime endTime) {
+        if (endTime != null) {
+            incident.setEndTime(endTime);
+            incident.setStatus(IncidentStatus.RESOLVED);
+        }
     }
 
     @Override
     @Transactional
     public IncidentResponse closeIncident(Long id) {
+        return changeStatus(id, IncidentStatusChangeRequest.builder()
+                .status(IncidentStatus.RESOLVED)
+                .build());
+    }
+
+    @Override
+    @Transactional
+    public IncidentResponse changeStatus(Long id, IncidentStatusChangeRequest request) {
         Incident incident = findIncidentEntityById(id);
-
-        if (incident.getEndTime() != null) {
-            throw new BusinessException("Incident is already closed");
-        }
-
-        incident.setEndTime(LocalDateTime.now());
+        assertCanMutateIncident(incident);
+        applyStatusTransition(incident, request.getStatus());
         return incidentMapper.toResponse(incidentRepository.save(incident));
     }
 
     @Override
     @Transactional
-    public void deleteIncident(Long id) {
+    public IncidentResponse assignIncident(Long id, IncidentAssignRequest request) {
         Incident incident = findIncidentEntityById(id);
-        incidentRepository.delete(incident);
+        if (clientScopeService.isCurrentUserClient()) {
+            throw new ForbiddenException("Clients cannot assign incidents");
+        }
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            throw new ForbiddenException("Only managers can assign incidents");
+        }
+
+        Long assigneeId = request.getAssigneeId();
+        managerScopeService.assertIncidentAccess(incident);
+
+        if (assigneeId == null) {
+            incident.setAssignee(null);
+            if (incident.getStatus() == IncidentStatus.IN_PROGRESS) {
+                incident.setStatus(IncidentStatus.OPEN);
+            }
+        } else {
+            incident.setAssignee(resolveAssignee(incident, assigneeId));
+            if (incident.getStatus() == IncidentStatus.OPEN) {
+                incident.setStatus(IncidentStatus.IN_PROGRESS);
+            }
+        }
+
+        return incidentMapper.toResponse(incidentRepository.save(incident));
+    }
+
+    private void applyStatusTransition(Incident incident, IncidentStatus targetStatus) {
+        IncidentStatus currentStatus = incident.getStatus();
+        if (currentStatus == targetStatus) {
+            return;
+        }
+        if (currentStatus == IncidentStatus.RESOLVED) {
+            throw new BusinessException("Resolved incidents cannot change status");
+        }
+
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            assertEmployeeStatusTransition(incident, currentStatus, targetStatus);
+        }
+
+        switch (targetStatus) {
+            case IN_PROGRESS -> {
+                if (currentStatus != IncidentStatus.OPEN) {
+                    throw new BusinessException("Only open incidents can move to IN_PROGRESS");
+                }
+                if (incident.getAssignee() == null) {
+                    throw new BusinessException("Incident must be assigned before moving to IN_PROGRESS");
+                }
+                incident.setStatus(IncidentStatus.IN_PROGRESS);
+            }
+            case RESOLVED -> {
+                if (currentStatus != IncidentStatus.IN_PROGRESS) {
+                    throw new BusinessException("Only in-progress incidents can be resolved");
+                }
+                if (employeeScopeService.isCurrentUserEmployee()
+                        && (incident.getAssignee() == null
+                        || !employeeScopeService.getCurrentUserId().equals(incident.getAssignee().getId()))) {
+                    throw new ForbiddenException("Only the assigned employee can resolve this incident");
+                }
+                incident.setStatus(IncidentStatus.RESOLVED);
+                incident.setEndTime(LocalDateTime.now());
+            }
+            case OPEN -> {
+                if (currentStatus != IncidentStatus.IN_PROGRESS) {
+                    throw new BusinessException("Only in-progress incidents can return to OPEN");
+                }
+                incident.setStatus(IncidentStatus.OPEN);
+                incident.setAssignee(null);
+            }
+            default -> throw new BusinessException("Unsupported status transition");
+        }
+    }
+
+    private void assertEmployeeStatusTransition(
+            Incident incident,
+            IncidentStatus currentStatus,
+            IncidentStatus targetStatus) {
+        employeeScopeService.assertCanManageIncident(incident);
+        if (targetStatus == IncidentStatus.IN_PROGRESS && incident.getAssignee() == null) {
+            throw new BusinessException("Incident must be assigned by a manager before moving to IN_PROGRESS");
+        }
+        if (targetStatus == IncidentStatus.RESOLVED
+                && (incident.getAssignee() == null
+                || !employeeScopeService.getCurrentUserId().equals(incident.getAssignee().getId()))) {
+            throw new ForbiddenException("Only the assigned employee can resolve this incident");
+        }
+        if (targetStatus == IncidentStatus.OPEN
+                && employeeScopeService.isCurrentUserEmployee()) {
+            throw new ForbiddenException("Only managers can unassign incidents");
+        }
     }
 
     @Override
@@ -96,16 +221,12 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     public IncidentResponse findById(Long id) {
-        Incident incident = findIncidentEntityById(id);
-        employeeScopeService.assertIncidentAccess(incident);
-        managerScopeService.assertIncidentAccess(incident);
-        clientScopeService.assertIncidentAccess(incident);
-        return incidentMapper.toResponse(incident);
+        return incidentMapper.toResponse(findIncidentEntityById(id));
     }
 
     @Override
     public List<IncidentResponse> findOpenIncidents() {
-        return filterVisible(incidentRepository.findByEndTimeIsNull()).stream()
+        return filterVisible(incidentRepository.findByStatusNot(IncidentStatus.RESOLVED)).stream()
                 .map(incidentMapper::toResponse)
                 .toList();
     }
@@ -143,6 +264,34 @@ public class IncidentServiceImpl implements IncidentService {
                 .toList();
     }
 
+    private void assertCanMutateIncident(Incident incident) {
+        if (clientScopeService.isCurrentUserClient()) {
+            throw new ForbiddenException("Clients cannot modify incidents");
+        }
+        employeeScopeService.assertCanManageIncident(incident);
+        managerScopeService.assertIncidentAccess(incident);
+    }
+
+    private User resolveAssignee(Incident incident, Long assigneeId) {
+        User assignee = userRepository.findById(assigneeId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", assigneeId));
+        if (assignee.getRole() != Role.EMPLOYEE) {
+            throw new BusinessException("Only employees can be assigned to incidents");
+        }
+        if (incident.getProject() != null) {
+            Project project = projectRepository.findByIdWithDetails(incident.getProject().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Project", "id", incident.getProject().getId()));
+            boolean member = project.getAssignedMembers().stream()
+                    .anyMatch(user -> user.getId().equals(assigneeId));
+            if (!member) {
+                throw new BusinessException("Assignee must be a member of the incident project");
+            }
+        } else {
+            employeeScopeService.assertSlaAccess(incident.getSla().getId());
+        }
+        return assignee;
+    }
+
     private List<Incident> filterVisible(List<Incident> incidents) {
         if (employeeScopeService.isCurrentUserEmployee()) {
             return incidents.stream()
@@ -169,8 +318,12 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     private Incident findIncidentEntityById(Long id) {
-        return incidentRepository.findById(id)
+        Incident incident = incidentRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Incident", "id", id));
+        employeeScopeService.assertIncidentAccess(incident);
+        managerScopeService.assertIncidentAccess(incident);
+        clientScopeService.assertIncidentAccess(incident);
+        return incident;
     }
 
     private Sla findSlaById(Long id) {

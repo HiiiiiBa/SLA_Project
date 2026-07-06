@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SlaServiceDraftList, type ServiceDraft } from "@/components/forms/SlaServiceDraftList";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -33,6 +34,7 @@ export function SlaFormModal({ open, onClose, onSaved, sla }: SlaFormModalProps)
   const [uptimeTarget, setUptimeTarget] = useState("99.9");
   const [responseTimeLimit, setResponseTimeLimit] = useState("500");
   const [errorRateLimit, setErrorRateLimit] = useState("1");
+  const [serviceDrafts, setServiceDrafts] = useState<ServiceDraft[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -51,6 +53,7 @@ export function SlaFormModal({ open, onClose, onSaved, sla }: SlaFormModalProps)
     setUptimeTarget(String(sla?.uptimeTarget ?? 99.9));
     setResponseTimeLimit(String(sla?.responseTimeLimit ?? 500));
     setErrorRateLimit(String(sla?.errorRateLimit ?? 1));
+    setServiceDrafts([]);
     setError("");
   }, [open, sla]);
 
@@ -73,6 +76,13 @@ export function SlaFormModal({ open, onClose, onSaved, sla }: SlaFormModalProps)
           body: JSON.stringify(payload),
         });
       } else {
+        const services = serviceDrafts
+          .map((draft) => ({
+            name: draft.name.trim(),
+            status: draft.status,
+          }))
+          .filter((draft) => draft.name.length > 0);
+
         const payload: SlaCreateRequest = {
           name,
           status,
@@ -80,6 +90,7 @@ export function SlaFormModal({ open, onClose, onSaved, sla }: SlaFormModalProps)
           responseTimeLimit: Number(responseTimeLimit),
           errorRateLimit: Number(errorRateLimit),
           clientId: Number(clientId),
+          services: services.length > 0 ? services : undefined,
         };
         await apiFetch<Sla>("/api/slas", {
           method: "POST",
@@ -100,7 +111,11 @@ export function SlaFormModal({ open, onClose, onSaved, sla }: SlaFormModalProps)
       open={open}
       onClose={onClose}
       title={isEdit ? "Modifier le SLA" : "Nouveau SLA"}
-      description="Définissez les objectifs de niveau de service."
+      description={
+        isEdit
+          ? "Définissez les objectifs de niveau de service."
+          : "Définissez le contrat et associez éventuellement des services monitorés."
+      }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -139,6 +154,7 @@ export function SlaFormModal({ open, onClose, onSaved, sla }: SlaFormModalProps)
                 ))}
               </Select>
             </div>
+            <SlaServiceDraftList drafts={serviceDrafts} onChange={setServiceDrafts} />
           </>
         )}
         {isEdit && (

@@ -65,10 +65,10 @@ Voir le [README principal](../README.md) pour le détail (MailHog, ports, variab
 | `/alerts` | Alertes + WebSocket temps réel |
 | `/reports` | Rapports + export PDF/CSV |
 | `/clients` | Clients (admin) + CRUD |
-| `/services` | Services monitorés + CRUD (admin) |
 | `/admin` | Administration (users, moteur SLA, simulation) |
-| `/incidents` | Incidents + CRUD (admin) |
-| `/slas/[id]` | Détail SLA + graphiques métriques |
+| `/admin/approvals` | Validations des demandes managers |
+| `/incidents` | Incidents |
+| `/slas/[id]` | Détail SLA + services (CRUD admin/manager) + graphiques métriques |
 
 ## Variables d'environnement
 

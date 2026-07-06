@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { AlertStatus, IncidentSeverity, ServiceStatus, SlaStatus } from "@/types";
+import type { AlertStatus, IncidentSeverity, IncidentStatus, ServiceStatus, SlaStatus } from "@/types";
 
 const badgeBase =
   "inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide";
@@ -61,6 +61,26 @@ export function ServiceStatusBadge({ status }: { status: ServiceStatus }) {
   return (
     <span className={cn(badgeBase, serviceStyles[status])}>
       {status}
+    </span>
+  );
+}
+
+const incidentStatusStyles: Record<IncidentStatus, string> = {
+  OPEN: "bg-primary/15 text-primary border border-primary/30 shadow-sm",
+  IN_PROGRESS: "bg-warning/15 text-warning border border-warning/30 shadow-sm",
+  RESOLVED: "bg-success/15 text-success border border-success/30 shadow-sm",
+};
+
+const incidentStatusLabels: Record<IncidentStatus, string> = {
+  OPEN: "Ouvert",
+  IN_PROGRESS: "En cours",
+  RESOLVED: "Résolu",
+};
+
+export function IncidentStatusBadge({ status }: { status: IncidentStatus }) {
+  return (
+    <span className={cn(badgeBase, incidentStatusStyles[status])}>
+      {incidentStatusLabels[status]}
     </span>
   );
 }

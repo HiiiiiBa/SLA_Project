@@ -21,7 +21,7 @@ import type {
 } from "@/types";
 
 export default function AlertsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isClient } = useAuth();
   const sessionUserId = useSessionUserId();
   const { connected, liveNotifications } = useNotifications();
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -117,7 +117,11 @@ export default function AlertsPage() {
     <>
       <Header
         title="Alertes"
-        description="Filtrage, actions et notifications temps réel (SLA BREACHED, service DOWN, taux d'erreur élevé)."
+        description={
+          isClient
+            ? "Consultation des alertes liées à vos SLA (lecture seule)."
+            : "Filtrage, actions et notifications temps réel (SLA BREACHED, service DOWN, taux d'erreur élevé)."
+        }
         action={
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-2 text-sm text-muted shadow-sm backdrop-blur">
             {connected ? (
@@ -132,11 +136,14 @@ export default function AlertsPage() {
 
       {error && <ErrorBanner message={error} onRetry={loadAlerts} />}
 
-      {liveNotifications.length > 0 && (
+      {liveNotifications.filter((item) => item.source === "alert").length > 0 && (
         <div className="mb-6 space-y-3">
-          {liveNotifications.slice(0, 5).map((alert) => (
+          {liveNotifications
+            .filter((item) => item.source === "alert")
+            .slice(0, 5)
+            .map((item) => (
             <div
-              key={`${alert.alertId}-${alert.createdAt}`}
+              key={item.id}
               className="animate-slide-in rounded-2xl border border-success/25 bg-success/10 px-5 py-4 shadow-sm"
             >
               <div className="flex items-start gap-3">
@@ -145,11 +152,11 @@ export default function AlertsPage() {
                 </div>
                 <div>
                   <p className="font-semibold text-heading">
-                    Nouvelle alerte — {alert.slaName}
+                    Nouvelle alerte — {item.data.slaName}
                   </p>
-                  <p className="mt-1 text-sm text-body">{alert.message}</p>
+                  <p className="mt-1 text-sm text-body">{item.data.message}</p>
                   <p className="mt-2 text-xs text-muted">
-                    {alert.clientName} · {formatDate(alert.createdAt)}
+                    {item.data.clientName} · {formatDate(item.data.createdAt)}
                   </p>
                 </div>
               </div>

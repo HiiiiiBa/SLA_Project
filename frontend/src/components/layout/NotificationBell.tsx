@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, Mail, Radio } from "lucide-react";
+import { Bell, CheckCircle2, ClipboardCheck, Radio, XCircle } from "lucide-react";
 import { useNotifications } from "@/context/NotificationContext";
+import { useAuth } from "@/context/AuthContext";
 import { cn, formatDate } from "@/lib/utils";
 
 export function NotificationBell() {
+  const { isAdmin } = useAuth();
   const { connected, liveNotifications, clearLive } = useNotifications();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -88,52 +90,61 @@ export function NotificationBell() {
             ) : (
               liveNotifications.map((item) => (
                 <div
-                  key={`${item.alertId}-${item.createdAt}`}
+                  key={item.id}
                   className="border-b border-border/60 px-4 py-3 last:border-b-0 hover:bg-card/80"
                 >
-                  <div className="flex items-start gap-2">
-                    <Radio className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-heading">
-                        {item.slaName}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-xs text-body">{item.message}</p>
-                      <p className="mt-1.5 text-[11px] text-muted">
-                        {item.clientName} · {formatDate(item.createdAt)}
-                      </p>
+                  {item.source === "alert" ? (
+                    <div className="flex items-start gap-2">
+                      <Radio className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-heading">
+                          {item.data.slaName}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-xs text-body">{item.data.message}</p>
+                        <p className="mt-1.5 text-[11px] text-muted">
+                          {item.data.clientName} · {formatDate(item.data.createdAt)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      {item.data.kind === "APPROVED" ? (
+                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                      ) : item.data.kind === "REJECTED" ? (
+                        <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-error" />
+                      ) : (
+                        <ClipboardCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-heading">
+                          {item.data.kind === "SUBMITTED"
+                            ? "Demande de validation"
+                            : item.data.kind === "APPROVED"
+                              ? "Demande approuvée"
+                              : "Demande refusée"}
+                        </p>
+                        <p className="mt-1 line-clamp-3 text-xs text-body">{item.data.message}</p>
+                        <p className="mt-1.5 text-[11px] text-muted">
+                          {formatDate(item.data.createdAt)}
+                        </p>
+                        {isAdmin && item.data.kind === "SUBMITTED" && (
+                          <Link
+                            href="/admin/approvals"
+                            onClick={close}
+                            className="mt-1 inline-block text-[11px] font-medium text-primary hover:underline"
+                          >
+                            Voir les validations →
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}
           </div>
-
-          <div className="border-t border-border bg-card/80 px-4 py-3">
-            <Link
-              href="/notifications"
-              onClick={close}
-              className="block rounded-lg bg-primary/10 px-3 py-2 text-center text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
-            >
-              Voir l&apos;historique complet
-            </Link>
-          </div>
         </div>
       )}
-    </div>
-  );
-}
-
-export function NotificationStatusBadges() {
-  return (
-    <div className="flex flex-wrap gap-2 text-xs text-muted">
-      <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-1">
-        <Radio className="h-3 w-3 text-primary" />
-        WebSocket temps réel
-      </span>
-      <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-1">
-        <Mail className="h-3 w-3 text-accent" />
-        Email automatique
-      </span>
     </div>
   );
 }
