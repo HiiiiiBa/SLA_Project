@@ -6,14 +6,17 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useAuth } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
+  const sessionKey = user?.userId ?? "anonymous";
 
   return (
     <AuthGuard>
-      <NotificationProvider>
+      <NotificationProvider key={sessionKey}>
         <div className="page-shell">
         {/* Mobile header */}
         <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-card/80 backdrop-blur-md px-4 py-3 lg:hidden">
@@ -48,7 +51,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle variant="icon" />
           </div>
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 animate-fade-in">
-            {children}
+            <div key={sessionKey}>{children}</div>
           </div>
         </main>
         </div>

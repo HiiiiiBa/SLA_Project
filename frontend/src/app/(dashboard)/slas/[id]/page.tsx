@@ -15,6 +15,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/context/AuthContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate, formatPercent } from "@/lib/utils";
 import type { Incident, MonitoringMetric, ServiceEntity, Sla } from "@/types";
@@ -22,7 +23,8 @@ import type { Incident, MonitoringMetric, ServiceEntity, Sla } from "@/types";
 export default function SlaDetailPage() {
   const params = useParams();
   const slaId = Number(params.id);
-  const { isAdmin } = useAuth();
+  const { isAdmin, canManageSla, canCreateIncident } = useAuth();
+  const sessionUserId = useSessionUserId();
   const [sla, setSla] = useState<Sla | null>(null);
   const [metrics, setMetrics] = useState<MonitoringMetric[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -33,7 +35,7 @@ export default function SlaDetailPage() {
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!slaId) return;
+    if (!slaId || !sessionUserId) return;
     setLoading(true);
     setError(null);
     try {
@@ -52,7 +54,7 @@ export default function SlaDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [slaId]);
+  }, [slaId, sessionUserId]);
 
   useEffect(() => {
     loadData();
@@ -101,24 +103,31 @@ export default function SlaDetailPage() {
         title={sla.name}
         description={`Contrat SLA #${sla.id} — ${sla.clientName ?? `client #${sla.clientId}`}`}
         action={
-          isAdmin ? (
+          canCreateIncident ? (
             <div className="flex flex-wrap gap-2">
-              <Button onClick={() => setServiceModalOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Associer un service
-              </Button>
+              {isAdmin && (
+                <Button onClick={() => setServiceModalOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  Associer un service
+                </Button>
+              )}
               <Button variant="secondary" onClick={() => setIncidentModalOpen(true)}>
                 <Plus className="h-4 w-4" />
                 Nouvel incident
               </Button>
             </div>
+          ) : isAdmin ? (
+            <Button onClick={() => setServiceModalOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Associer un service
+            </Button>
           ) : undefined
         }
       />
 
       {error && <ErrorBanner message={error} onRetry={loadData} />}
 
-      {isAdmin && (
+      {canManageSla && (
         <SlaLifecycleActions sla={sla} onChanged={loadData} onError={setError} />
       )}
 
@@ -224,7 +233,7 @@ export default function SlaDetailPage() {
         </CardBody>
       </Card>
 
-      {isAdmin && (
+      {canCreateIncident && (
         <>
           <IncidentFormModal
             open={incidentModalOpen}

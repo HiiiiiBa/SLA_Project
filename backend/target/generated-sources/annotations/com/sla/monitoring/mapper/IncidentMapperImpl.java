@@ -4,13 +4,14 @@ import com.sla.monitoring.dto.request.IncidentCreateRequest;
 import com.sla.monitoring.dto.request.IncidentUpdateRequest;
 import com.sla.monitoring.dto.response.IncidentResponse;
 import com.sla.monitoring.entity.Incident;
+import com.sla.monitoring.entity.Project;
 import com.sla.monitoring.entity.Sla;
 import javax.annotation.processing.Generated;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-07-01T03:26:10+0100",
+    date = "2026-07-04T09:44:38+0100",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.10 (Oracle Corporation)"
 )
 @Component
@@ -25,6 +26,8 @@ public class IncidentMapperImpl implements IncidentMapper {
         IncidentResponse.IncidentResponseBuilder incidentResponse = IncidentResponse.builder();
 
         incidentResponse.slaId( incidentSlaId( incident ) );
+        incidentResponse.projectId( incidentProjectId( incident ) );
+        incidentResponse.projectName( incidentProjectName( incident ) );
         incidentResponse.id( incident.getId() );
         incidentResponse.startTime( incident.getStartTime() );
         incidentResponse.endTime( incident.getEndTime() );
@@ -69,5 +72,21 @@ public class IncidentMapperImpl implements IncidentMapper {
             return null;
         }
         return sla.getId();
+    }
+
+    private Long incidentProjectId(Incident incident) {
+        Project project = incident.getProject();
+        if ( project == null ) {
+            return null;
+        }
+        return project.getId();
+    }
+
+    private String incidentProjectName(Incident incident) {
+        Project project = incident.getProject();
+        if ( project == null ) {
+            return null;
+        }
+        return project.getName();
     }
 }

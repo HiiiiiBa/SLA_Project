@@ -18,6 +18,8 @@ public interface UserService {
 
     List<UserResponse> findAll();
 
+    List<UserResponse> findByRole(com.sla.monitoring.entity.enums.Role role);
+
     UserResponse findByEmail(String email);
 
     UserResponse activateUser(Long id);

@@ -159,31 +159,6 @@ export default function AdminPage() {
             description="Calcul manuel, automatique (scheduler) et recalcul par contrat."
           />
           <CardBody className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
-                  Fonctionnalités
-                </p>
-                <ul className="space-y-1 text-sm text-body">
-                  <li>Lancer calcul manuel SLA (tous)</li>
-                  <li>Calcul automatique via scheduler (horaire)</li>
-                  <li>Recalcul par SLA</li>
-                  <li>Mise à jour statuts SLA</li>
-                </ul>
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
-                  Logique
-                </p>
-                <ul className="space-y-1 text-sm text-body">
-                  <li>Analyse des métriques</li>
-                  <li>Comparaison avec objectifs SLA</li>
-                  <li>Changement automatique de statut</li>
-                  <li>Génération d&apos;alertes</li>
-                </ul>
-              </div>
-            </div>
-
             <Button onClick={runSlaEvaluation} loading={engineLoading}>
               <Cpu className="h-4 w-4" />
               Évaluer tous les SLA
@@ -387,17 +362,6 @@ export default function AdminPage() {
               </tbody>
             </table>
           )}
-        </CardBody>
-      </Card>
-
-      <Card className="mt-6">
-        <CardHeader title="Comptes démo (dev)" description="Créés automatiquement au démarrage" />
-        <CardBody>
-          <ul className="space-y-2 text-sm text-body">
-            <li><strong>admin@sla.com</strong> / Admin123! — ADMIN</li>
-            <li><strong>user@sla.com</strong> / User123! — USER</li>
-            <li><strong>client@acme.com</strong> / Client123! — CLIENT</li>
-          </ul>
         </CardBody>
       </Card>
 

@@ -8,16 +8,21 @@ import com.sla.monitoring.entity.enums.AlertStatus;
 import com.sla.monitoring.entity.enums.AlertType;
 import com.sla.monitoring.exception.BusinessException;
 import com.sla.monitoring.exception.ResourceNotFoundException;
+import com.sla.monitoring.exception.ForbiddenException;
 import com.sla.monitoring.mapper.AlertMapper;
 import com.sla.monitoring.notification.AlertNotificationService;
 import com.sla.monitoring.repository.AlertRepository;
 import com.sla.monitoring.repository.SlaRepository;
 import com.sla.monitoring.service.AlertService;
+import com.sla.monitoring.service.ClientScopeService;
+import com.sla.monitoring.service.EmployeeScopeService;
+import com.sla.monitoring.service.ManagerScopeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +33,9 @@ public class AlertServiceImpl implements AlertService {
     private final SlaRepository slaRepository;
     private final AlertMapper alertMapper;
     private final AlertNotificationService alertNotificationService;
+    private final EmployeeScopeService employeeScopeService;
+    private final ManagerScopeService managerScopeService;
+    private final ClientScopeService clientScopeService;
 
     @Override
     @Transactional
@@ -71,6 +79,33 @@ public class AlertServiceImpl implements AlertService {
 
     @Override
     public List<AlertResponse> findAll() {
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            Set<Long> slaIds = employeeScopeService.getScopedSlaIds();
+            if (slaIds.isEmpty()) {
+                return List.of();
+            }
+            return alertRepository.findBySlaIdIn(slaIds).stream()
+                    .map(alertMapper::toResponse)
+                    .toList();
+        }
+        if (managerScopeService.isCurrentUserManager()) {
+            Set<Long> slaIds = managerScopeService.getScopedSlaIds();
+            if (slaIds.isEmpty()) {
+                return List.of();
+            }
+            return alertRepository.findBySlaIdIn(slaIds).stream()
+                    .map(alertMapper::toResponse)
+                    .toList();
+        }
+        if (clientScopeService.isCurrentUserClient()) {
+            Set<Long> slaIds = clientScopeService.getScopedSlaIds();
+            if (slaIds.isEmpty()) {
+                return List.of();
+            }
+            return alertRepository.findBySlaIdIn(slaIds).stream()
+                    .map(alertMapper::toResponse)
+                    .toList();
+        }
         return alertRepository.findAllWithDetails().stream()
                 .map(alertMapper::toResponse)
                 .toList();
@@ -78,20 +113,48 @@ public class AlertServiceImpl implements AlertService {
 
     @Override
     public List<AlertResponse> findFiltered(Long slaId, Long serviceId, AlertType type, AlertStatus status) {
-        return alertRepository.findFiltered(slaId, serviceId, type, status).stream()
+        if (slaId != null) {
+            employeeScopeService.assertSlaAccess(slaId);
+            managerScopeService.assertSlaAccess(slaId);
+            clientScopeService.assertSlaAccess(slaId);
+        }
+        List<AlertResponse> alerts = alertRepository.findFiltered(slaId, serviceId, type, status).stream()
                 .map(alertMapper::toResponse)
                 .toList();
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            Set<Long> scopedSlaIds = employeeScopeService.getScopedSlaIds();
+            return alerts.stream()
+                    .filter(alert -> scopedSlaIds.contains(alert.getSlaId()))
+                    .toList();
+        }
+        if (managerScopeService.isCurrentUserManager()) {
+            Set<Long> scopedSlaIds = managerScopeService.getScopedSlaIds();
+            return alerts.stream()
+                    .filter(alert -> scopedSlaIds.contains(alert.getSlaId()))
+                    .toList();
+        }
+        if (clientScopeService.isCurrentUserClient()) {
+            Set<Long> scopedSlaIds = clientScopeService.getScopedSlaIds();
+            return alerts.stream()
+                    .filter(alert -> scopedSlaIds.contains(alert.getSlaId()))
+                    .toList();
+        }
+        return alerts;
     }
 
     @Override
     public AlertResponse findById(Long id) {
-        return alertMapper.toResponse(findAlertEntityById(id));
+        Alert alert = findAlertEntityById(id);
+        employeeScopeService.assertSlaAccess(alert.getSla().getId());
+        managerScopeService.assertSlaAccess(alert.getSla().getId());
+        clientScopeService.assertSlaAccess(alert.getSla().getId());
+        return alertMapper.toResponse(alert);
     }
 
     @Override
     public List<AlertResponse> findActiveAlerts() {
-        return alertRepository.findByStatus(AlertStatus.NEW).stream()
-                .map(alertMapper::toResponse)
+        return findAll().stream()
+                .filter(alert -> alert.getStatus() == AlertStatus.NEW)
                 .toList();
     }
 

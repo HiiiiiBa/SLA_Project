@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface SlaRepository extends JpaRepository<Sla, Long> {
@@ -25,6 +27,12 @@ public interface SlaRepository extends JpaRepository<Sla, Long> {
     @Query("SELECT s FROM Sla s JOIN FETCH s.client WHERE s.client.id = :clientId ORDER BY s.name ASC")
     List<Sla> findByClientIdWithClient(@Param("clientId") Long clientId);
 
+    @Query("SELECT s FROM Sla s JOIN FETCH s.client WHERE s.client.id IN :clientIds ORDER BY s.name ASC")
+    List<Sla> findByClientIdIn(@Param("clientIds") Set<Long> clientIds);
+
+    @Query("SELECT s FROM Sla s JOIN FETCH s.client WHERE s.id IN :slaIds ORDER BY s.name ASC")
+    List<Sla> findByIdInWithClient(@Param("slaIds") Set<Long> slaIds);
+
     @Query("SELECT s FROM Sla s JOIN FETCH s.client WHERE s.id = :id")
-    java.util.Optional<Sla> findByIdWithClient(@Param("id") Long id);
+    Optional<Sla> findByIdWithClient(@Param("id") Long id);
 }

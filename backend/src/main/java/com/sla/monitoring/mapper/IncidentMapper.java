@@ -12,14 +12,18 @@ import org.mapstruct.MappingTarget;
 public interface IncidentMapper {
 
     @Mapping(target = "slaId", source = "sla.id")
+    @Mapping(target = "projectId", source = "project.id")
+    @Mapping(target = "projectName", source = "project.name")
     IncidentResponse toResponse(Incident incident);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "endTime", ignore = true)
     @Mapping(target = "sla", ignore = true)
+    @Mapping(target = "project", ignore = true)
     Incident toEntity(IncidentCreateRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "sla", ignore = true)
+    @Mapping(target = "project", ignore = true)
     void updateEntity(IncidentUpdateRequest request, @MappingTarget Incident incident);
 }

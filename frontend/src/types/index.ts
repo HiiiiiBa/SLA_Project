@@ -1,4 +1,5 @@
-export type Role = "ADMIN" | "USER" | "CLIENT";
+export type Role = "ADMIN" | "CLIENT" | "MANAGER" | "EMPLOYEE";
+export type ProjectStatus = "ACTIVE" | "ARCHIVED";
 export type SlaStatus = "ACTIVE" | "INACTIVE" | "WARNING" | "BREACHED" | "ARCHIVED";
 export type AlertStatus = "NEW" | "READ" | "RESOLVED";
 export type AlertType = "EMAIL" | "WEB";
@@ -110,8 +111,74 @@ export interface Incident {
   severity: IncidentSeverity;
   description: string;
   slaId: number;
+  projectId?: number;
+  projectName?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface TeamMember {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface Team {
+  id: number;
+  name: string;
+  description?: string;
+  managerId: number;
+  managerName: string;
+  members: TeamMember[];
+  memberCount: number;
+  projectCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Project {
+  id: number;
+  name: string;
+  description?: string;
+  status: ProjectStatus;
+  clientId: number;
+  clientName: string;
+  teamId?: number;
+  teamName?: string;
+  slaId?: number;
+  slaName?: string;
+  managerName?: string;
+  assignedMembers: TeamMember[];
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamCreateRequest {
+  name: string;
+  description?: string;
+  managerId: number;
+  memberIds?: number[];
+}
+
+export interface TeamUpdateRequest extends TeamCreateRequest {}
+
+export interface ProjectCreateRequest {
+  name: string;
+  description?: string;
+  clientId: number;
+  teamId?: number;
+  memberIds?: number[];
+}
+
+export interface ProjectUpdateRequest {
+  name: string;
+  description?: string;
+  status: ProjectStatus;
+  clientId: number;
+  teamId?: number;
+  memberIds?: number[];
 }
 
 export interface MonitoringMetric {
@@ -160,6 +227,7 @@ export interface IncidentCreateRequest {
   severity: IncidentSeverity;
   description: string;
   slaId: number;
+  projectId?: number;
 }
 
 export interface IncidentUpdateRequest {
@@ -167,6 +235,7 @@ export interface IncidentUpdateRequest {
   endTime?: string | null;
   severity: IncidentSeverity;
   description: string;
+  projectId?: number;
 }
 
 export interface User {
@@ -233,6 +302,7 @@ export interface SlaWithServices {
 
 export interface ClientPortfolio {
   client: Client;
+  projects: Project[];
   slas: SlaWithServices[];
 }
 

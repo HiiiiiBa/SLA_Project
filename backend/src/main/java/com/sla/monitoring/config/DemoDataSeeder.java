@@ -71,10 +71,9 @@ public class DemoDataSeeder implements CommandLineRunner {
         createService("Auth Service", sla);
         createService("Database Cluster", sla);
 
-        createUserIfAbsent("Demo", "User", "user@sla.com", "User123!", Role.USER);
         createUserIfAbsent("Acme", "Client", DEMO_CLIENT_EMAIL, "Client123!", Role.CLIENT);
 
-        log.info("Demo data seeded: client '{}', SLA '{}', 3 services, 2 users",
+        log.info("Demo data seeded: client '{}', SLA '{}', 3 services, 1 client user",
                 client.getName(), sla.getName());
     }
 

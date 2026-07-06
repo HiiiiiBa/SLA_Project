@@ -3,6 +3,8 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
+  --font-geist-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-geist-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
   /* Light mode - subtle, professional */
   --background: #f0f4f8;
   --foreground: #0f172a;

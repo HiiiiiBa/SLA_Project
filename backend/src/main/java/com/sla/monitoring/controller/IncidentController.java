@@ -42,10 +42,14 @@ public class IncidentController {
     @Operation(summary = "Get incidents (all, open, or filtered by severity)")
     public ResponseEntity<ApiResponse<List<IncidentResponse>>> findAll(
             @RequestParam(required = false) Long slaId,
+            @RequestParam(required = false) Long projectId,
             @RequestParam(required = false) Boolean open,
             @RequestParam(required = false) IncidentSeverity severity) {
         if (slaId != null) {
             return ResponseEntity.ok(ApiResponse.success(incidentService.findBySlaId(slaId)));
+        }
+        if (projectId != null) {
+            return ResponseEntity.ok(ApiResponse.success(incidentService.findByProjectId(projectId)));
         }
         if (Boolean.TRUE.equals(open)) {
             return ResponseEntity.ok(ApiResponse.success(incidentService.findOpenIncidents()));

@@ -5,9 +5,11 @@ import com.sla.monitoring.entity.Client;
 import com.sla.monitoring.entity.Incident;
 import com.sla.monitoring.entity.MonitoringMetric;
 import com.sla.monitoring.entity.Notification;
+import com.sla.monitoring.entity.Project;
 import com.sla.monitoring.entity.Report;
 import com.sla.monitoring.entity.Service;
 import com.sla.monitoring.entity.Sla;
+import com.sla.monitoring.entity.Team;
 import com.sla.monitoring.entity.User;
 import com.sla.monitoring.entity.enums.AlertStatus;
 import com.sla.monitoring.entity.enums.AlertType;
@@ -15,6 +17,7 @@ import com.sla.monitoring.entity.enums.IncidentSeverity;
 import com.sla.monitoring.entity.enums.MetricStatus;
 import com.sla.monitoring.entity.enums.NotificationChannel;
 import com.sla.monitoring.entity.enums.NotificationStatus;
+import com.sla.monitoring.entity.enums.ProjectStatus;
 import com.sla.monitoring.entity.enums.ReportFormat;
 import com.sla.monitoring.entity.enums.Role;
 import com.sla.monitoring.entity.enums.ServiceStatus;
@@ -24,9 +27,11 @@ import com.sla.monitoring.repository.ClientRepository;
 import com.sla.monitoring.repository.IncidentRepository;
 import com.sla.monitoring.repository.MonitoringMetricRepository;
 import com.sla.monitoring.repository.NotificationRepository;
+import com.sla.monitoring.repository.ProjectRepository;
 import com.sla.monitoring.repository.ReportRepository;
 import com.sla.monitoring.repository.ServiceRepository;
 import com.sla.monitoring.repository.SlaRepository;
+import com.sla.monitoring.repository.TeamRepository;
 import com.sla.monitoring.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +67,8 @@ public class DemoRichContentSeeder implements CommandLineRunner {
     private final IncidentRepository incidentRepository;
     private final AlertRepository alertRepository;
     private final NotificationRepository notificationRepository;
+    private final TeamRepository teamRepository;
+    private final ProjectRepository projectRepository;
     private final ReportRepository reportRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -79,9 +86,14 @@ public class DemoRichContentSeeder implements CommandLineRunner {
         boolean needsAlerts = alertRepository.count() < 3;
         boolean needsReports = reportRepository.count() == 0;
         boolean needsNotifications = notificationRepository.count() == 0;
+        boolean needsTeamsProjects = teamRepository.count() == 0;
+
+        syncDemoUsers();
+        syncDemoEmployeeAssignments();
+        syncDemoManagerClientAssignments();
 
         if (!needsCatalog && !needsMetrics && !needsIncidents && !needsAlerts
-                && !needsReports && !needsNotifications) {
+                && !needsReports && !needsNotifications && !needsTeamsProjects) {
             log.info("Rich demo content already complete, skipping seed");
             return;
         }
@@ -130,10 +142,13 @@ public class DemoRichContentSeeder implements CommandLineRunner {
                 serviceDef("Ledger Service", ServiceStatus.UP)
         ));
 
-        createUserIfAbsent("Demo", "User", "user@sla.com", "User123!", Role.USER);
         createUserIfAbsent("Acme", "Client", "client@acme.com", "Client123!", Role.CLIENT);
         createUserIfAbsent("Marie", "Dupont", "client@techstart.fr", "Client123!", Role.CLIENT);
         createUserIfAbsent("James", "Wilson", "client@globalretail.com", "Client123!", Role.CLIENT);
+
+        if (needsTeamsProjects) {
+            seedTeamsAndProjects(acme, techStart, retail, acmeProd, techApi, retailShop);
+        }
 
         if (needsMetrics) {
             seedMetrics(acmeProdServices, acmeProd, MetricProfile.HEALTHY);
@@ -164,7 +179,157 @@ public class DemoRichContentSeeder implements CommandLineRunner {
                 incidentRepository.count(),
                 alertRepository.count(),
                 reportRepository.count(),
-                notificationRepository.count());
+                notificationRepository.count(),
+                teamRepository.count(),
+                projectRepository.count());
+    }
+
+    private void seedTeamsAndProjects(Client acme, Client techStart, Client retail,
+                                      Sla acmeProd, Sla techApi, Sla retailShop) {
+        User manager = userRepository.findByEmail("manager@sla.com").orElseThrow();
+        User employee1 = userRepository.findByEmail("employee1@sla.com").orElseThrow();
+        User employee2 = userRepository.findByEmail("employee2@sla.com").orElseThrow();
+
+        Team teamDev = teamRepository.save(Team.builder()
+                .name("Team Dev")
+                .description("Développement applicatif et APIs")
+                .manager(manager)
+                .members(new java.util.HashSet<>(List.of(employee1, employee2)))
+                .build());
+
+        Team teamNetwork = teamRepository.save(Team.builder()
+                .name("Team Réseaux")
+                .description("Infrastructure réseau et connectivité")
+                .manager(manager)
+                .members(new java.util.HashSet<>(List.of(employee2)))
+                .build());
+
+        Project acmePortal = projectRepository.save(Project.builder()
+                .name("Portail Acme")
+                .description("Modernisation du portail client Acme")
+                .status(ProjectStatus.ACTIVE)
+                .client(acme)
+                .team(teamDev)
+                .sla(acmeProd)
+                .assignedMembers(new java.util.HashSet<>(List.of(employee1)))
+                .build());
+
+        projectRepository.save(Project.builder()
+                .name("Core API TechStart")
+                .description("Refonte API cœur de métier")
+                .status(ProjectStatus.ACTIVE)
+                .client(techStart)
+                .team(teamDev)
+                .sla(techApi)
+                .assignedMembers(new java.util.HashSet<>(List.of(employee1, employee2)))
+                .build());
+
+        projectRepository.save(Project.builder()
+                .name("Réseau Retail EU")
+                .description("Déploiement réseau multi-régions")
+                .status(ProjectStatus.ACTIVE)
+                .client(retail)
+                .team(teamNetwork)
+                .sla(retailShop)
+                .assignedMembers(new java.util.HashSet<>(List.of(employee2)))
+                .build());
+
+        log.info("Seeded teams/projects including {}", acmePortal.getName());
+    }
+
+    private void syncDemoUsers() {
+        createUserIfAbsent("Sophie", "Martin", "manager@sla.com", "Manager123!", Role.MANAGER);
+        createUserIfAbsent("Ahmed", "Karim", "manager2@sla.com", "Manager123!", Role.MANAGER);
+        createUserIfAbsent("Lucas", "Bernard", "employee1@sla.com", "Employee123!", Role.EMPLOYEE);
+        createUserIfAbsent("Emma", "Petit", "employee2@sla.com", "Employee123!", Role.EMPLOYEE);
+        createUserIfAbsent("Acme", "Client", "client@acme.com", "Client123!", Role.CLIENT);
+        createUserIfAbsent("Marie", "Dupont", "client@techstart.fr", "Client123!", Role.CLIENT);
+        createUserIfAbsent("James", "Wilson", "client@globalretail.com", "Client123!", Role.CLIENT);
+    }
+
+    private void syncDemoManagerClientAssignments() {
+        User sophie = userRepository.findByEmail("manager@sla.com").orElse(null);
+        User ahmed = userRepository.findByEmail("manager2@sla.com").orElse(null);
+        if (sophie == null || ahmed == null) {
+            return;
+        }
+        assignClientManagers("client@acme.com", sophie);
+        assignClientManagers("client@techstart.fr", sophie);
+        assignClientManagers("client@globalretail.com", ahmed);
+        assignClientManagers("client@finserv.com", ahmed);
+        log.info("Synchronized demo managers: Sophie → Acme/TechStart, Ahmed → Global Retail/FinServ");
+    }
+
+    private void assignClientManagers(String clientEmail, User... managers) {
+        clientRepository.findByEmail(clientEmail).ifPresent(client -> {
+            client.getManagers().clear();
+            client.getManagers().addAll(java.util.Set.of(managers));
+            clientRepository.save(client);
+        });
+    }
+
+    private void syncDemoEmployeeAssignments() {
+        Sla acmeProd = findSlaByClientEmailAndName("client@acme.com", "Production API SLA");
+        Sla techApi = findSlaByClientEmailAndName("client@techstart.fr", "Core API SLA");
+        Sla retailShop = findSlaByClientEmailAndName("client@globalretail.com", "Boutique en ligne SLA");
+        if (acmeProd == null || techApi == null || retailShop == null) {
+            return;
+        }
+        ensureDemoProjectAssignments(acmeProd, techApi, retailShop);
+    }
+
+    private Sla findSlaByClientEmailAndName(String clientEmail, String slaName) {
+        return clientRepository.findByEmail(clientEmail)
+                .flatMap(client -> slaRepository.findByClientId(client.getId()).stream()
+                        .filter(sla -> slaName.equals(sla.getName()))
+                        .findFirst())
+                .orElse(null);
+    }
+
+    private void ensureDemoProjectAssignments(Sla acmeProd, Sla techApi, Sla retailShop) {
+        User manager = userRepository.findByEmail("manager@sla.com").orElse(null);
+        User employee1 = userRepository.findByEmail("employee1@sla.com").orElse(null);
+        User employee2 = userRepository.findByEmail("employee2@sla.com").orElse(null);
+        if (manager == null || employee1 == null || employee2 == null) {
+            return;
+        }
+
+        Team teamDev = teamRepository.findAllWithDetails().stream()
+                .filter(team -> "Team Dev".equals(team.getName()))
+                .findFirst()
+                .orElse(null);
+        Team teamNetwork = teamRepository.findAllWithDetails().stream()
+                .filter(team -> "Team Réseaux".equals(team.getName()))
+                .findFirst()
+                .orElse(null);
+
+        if (teamDev != null) {
+            teamDev.setManager(manager);
+            teamDev.getMembers().clear();
+            teamDev.getMembers().addAll(java.util.Set.of(employee1, employee2));
+            teamRepository.save(teamDev);
+        }
+        if (teamNetwork != null) {
+            teamNetwork.setManager(manager);
+            teamNetwork.getMembers().clear();
+            teamNetwork.getMembers().add(employee2);
+            teamRepository.save(teamNetwork);
+        }
+
+        upsertDemoProject("Portail Acme", acmeProd, teamDev, java.util.Set.of(employee1));
+        upsertDemoProject("Core API TechStart", techApi, teamDev, java.util.Set.of(employee1, employee2));
+        upsertDemoProject("Réseau Retail EU", retailShop, teamNetwork, java.util.Set.of(employee2));
+        log.info("Synchronized demo project/team assignments for employees");
+    }
+
+    private void upsertDemoProject(String name, Sla sla, Team team, java.util.Set<User> members) {
+        projectRepository.findByName(name).ifPresent(project -> {
+            project.setSla(sla);
+            project.setTeam(team);
+            project.getAssignedMembers().clear();
+            project.getAssignedMembers().addAll(members);
+            projectRepository.save(project);
+        });
     }
 
     private Client upsertClient(String name, String email, String projectName) {

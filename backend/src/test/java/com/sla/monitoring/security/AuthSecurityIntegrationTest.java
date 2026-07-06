@@ -49,7 +49,7 @@ class AuthSecurityIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
-                .andExpect(jsonPath("$.data.role").value("USER"));
+                .andExpect(jsonPath("$.data.role").value("EMPLOYEE"));
     }
 
     @Test
@@ -108,8 +108,8 @@ class AuthSecurityIntegrationTest {
     }
 
     @Test
-    @DisplayName("USER role cannot access ADMIN-only API routes")
-    void userRoleForbiddenOnAdminRoutes() throws Exception {
+    @DisplayName("EMPLOYEE role cannot access ADMIN-only API routes")
+    void employeeRoleForbiddenOnAdminRoutes() throws Exception {
         registerUser("role.test@sla.com", "Password1!");
         String userToken = loginAndGetAccessToken("role.test@sla.com", "Password1!");
 

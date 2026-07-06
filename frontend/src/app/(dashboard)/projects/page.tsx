@@ -1,0 +1,151 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { FolderKanban, Pencil, Plus, Trash2 } from "lucide-react";
+import { ProjectFormModal } from "@/components/forms/ProjectFormModal";
+import { Header } from "@/components/layout/Header";
+import { Button } from "@/components/ui/Button";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { useAuth } from "@/context/AuthContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
+import { ApiError, apiFetch } from "@/lib/api";
+import type { Project } from "@/types";
+
+export default function ProjectsPage() {
+  const { canManageOrg, isEmployee } = useAuth();
+  const sessionUserId = useSessionUserId();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  const loadProjects = useCallback(() => {
+    if (!sessionUserId) return;
+    setLoading(true);
+    setError(null);
+    apiFetch<Project[]>("/api/projects")
+      .then(setProjects)
+      .catch((err) =>
+        setError(err instanceof ApiError ? err.message : "Erreur de chargement"),
+      )
+      .finally(() => setLoading(false));
+  }, [sessionUserId]);
+
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
+
+  async function handleDelete(project: Project) {
+    if (!confirm(`Supprimer le projet "${project.name}" ?`)) return;
+    try {
+      await apiFetch<void>(`/api/projects/${project.id}`, { method: "DELETE" });
+      loadProjects();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Suppression impossible");
+    }
+  }
+
+  return (
+    <>
+      <Header
+        title="Projets"
+        description={
+          isEmployee
+            ? "Projets auxquels vous êtes assigné."
+            : "Un client peut avoir plusieurs projets, chacun géré par une équipe et des employés."
+        }
+        action={
+          canManageOrg ? (
+            <Button
+              onClick={() => {
+                setSelectedProject(null);
+                setModalOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Nouveau projet
+            </Button>
+          ) : undefined
+        }
+      />
+
+      {error && <ErrorBanner message={error} onRetry={loadProjects} />}
+
+      <Card>
+        <CardHeader title="Liste des projets" description={`${projects.length} projet(s)`} />
+        <CardBody className="overflow-x-auto p-0">
+          {loading ? (
+            <div className="px-6 py-10 text-sm text-muted">Chargement...</div>
+          ) : projects.length === 0 ? (
+            <EmptyState
+              icon={FolderKanban}
+              title="Aucun projet"
+              description="Associez un projet à un client et à une équipe."
+            />
+          ) : (
+            <table className="min-w-full text-sm">
+              <thead className="table-head">
+                <tr>
+                  <th className="px-6 py-4 font-medium">Nom</th>
+                  <th className="px-6 py-4 font-medium">Client</th>
+                  <th className="px-6 py-4 font-medium">Équipe</th>
+                  <th className="px-6 py-4 font-medium">Manager</th>
+                  <th className="px-6 py-4 font-medium">Employés</th>
+                  <th className="px-6 py-4 font-medium">Statut</th>
+                  {canManageOrg && <th className="px-6 py-4 font-medium">Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map((project) => (
+                  <tr key={project.id} className="table-row">
+                    <td className="px-6 py-4 font-medium text-heading">{project.name}</td>
+                    <td className="px-6 py-4 text-body">{project.clientName}</td>
+                    <td className="px-6 py-4 text-body">{project.teamName ?? "—"}</td>
+                    <td className="px-6 py-4 text-body">{project.managerName ?? "—"}</td>
+                    <td className="px-6 py-4 text-body">{project.memberCount}</td>
+                    <td className="px-6 py-4 text-body">{project.status}</td>
+                    {canManageOrg && (
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <div className="inline-flex items-center gap-1.5">
+                          <Button
+                            variant="secondary"
+                            className="!px-2.5 !py-2"
+                            onClick={() => {
+                              setSelectedProject(project);
+                              setModalOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="danger"
+                            className="!px-2.5 !py-2"
+                            onClick={() => handleDelete(project)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardBody>
+      </Card>
+
+      {canManageOrg && (
+        <ProjectFormModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSaved={loadProjects}
+          project={selectedProject}
+        />
+      )}
+    </>
+  );
+}

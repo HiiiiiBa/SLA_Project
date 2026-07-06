@@ -12,12 +12,16 @@ import com.sla.monitoring.mapper.SlaMapper;
 import com.sla.monitoring.repository.ClientRepository;
 import com.sla.monitoring.repository.ServiceRepository;
 import com.sla.monitoring.repository.SlaRepository;
+import com.sla.monitoring.service.ClientScopeService;
+import com.sla.monitoring.service.EmployeeScopeService;
+import com.sla.monitoring.service.ManagerScopeService;
 import com.sla.monitoring.service.SlaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -28,11 +32,15 @@ public class SlaServiceImpl implements SlaService {
     private final ClientRepository clientRepository;
     private final ServiceRepository serviceRepository;
     private final SlaMapper slaMapper;
+    private final EmployeeScopeService employeeScopeService;
+    private final ManagerScopeService managerScopeService;
+    private final ClientScopeService clientScopeService;
 
     @Override
     @Transactional
     public SlaResponse createSLA(SlaCreateRequest request) {
         validateSlaMetrics(request.getUptimeTarget(), request.getResponseTimeLimit(), request.getErrorRateLimit());
+        managerScopeService.assertClientAccess(request.getClientId());
 
         Client client = findClientById(request.getClientId());
         Sla sla = slaMapper.toEntity(request);
@@ -47,7 +55,9 @@ public class SlaServiceImpl implements SlaService {
         validateSlaMetrics(request.getUptimeTarget(), request.getResponseTimeLimit(), request.getErrorRateLimit());
 
         Sla sla = findSlaEntityById(id);
+        managerScopeService.assertSlaAccess(id);
         slaMapper.updateEntity(request, sla);
+        managerScopeService.assertClientAccess(request.getClientId());
         sla.setClient(findClientById(request.getClientId()));
 
         return enrichResponse(slaRepository.save(sla));
@@ -56,6 +66,7 @@ public class SlaServiceImpl implements SlaService {
     @Override
     @Transactional
     public SlaResponse archiveSLA(Long id) {
+        managerScopeService.assertSlaAccess(id);
         Sla sla = findSlaEntityById(id);
         sla.setStatus(SlaStatus.ARCHIVED);
         return enrichResponse(slaRepository.save(sla));
@@ -64,6 +75,7 @@ public class SlaServiceImpl implements SlaService {
     @Override
     @Transactional
     public SlaResponse activateSLA(Long id) {
+        managerScopeService.assertSlaAccess(id);
         Sla sla = findSlaEntityById(id);
         if (sla.getStatus() == SlaStatus.ARCHIVED) {
             throw new BusinessException("Cannot activate an archived SLA. Restore it manually or create a new contract.");
@@ -75,6 +87,7 @@ public class SlaServiceImpl implements SlaService {
     @Override
     @Transactional
     public SlaResponse deactivateSLA(Long id) {
+        managerScopeService.assertSlaAccess(id);
         Sla sla = findSlaEntityById(id);
         if (sla.getStatus() == SlaStatus.ARCHIVED) {
             throw new BusinessException("Cannot deactivate an archived SLA");
@@ -92,9 +105,37 @@ public class SlaServiceImpl implements SlaService {
 
     @Override
     public List<SlaResponse> getAll(Long clientId) {
-        List<Sla> slas = clientId == null
-                ? slaRepository.findAllWithClient()
-                : slaRepository.findByClientIdWithClient(clientId);
+        List<Sla> slas;
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            if (clientId != null) {
+                employeeScopeService.assertClientAccess(clientId);
+                Set<Long> scopedSlaIds = employeeScopeService.getScopedSlaIds();
+                slas = slaRepository.findByClientIdWithClient(clientId).stream()
+                        .filter(sla -> scopedSlaIds.contains(sla.getId()))
+                        .toList();
+            } else {
+                Set<Long> slaIds = employeeScopeService.getScopedSlaIds();
+                slas = slaIds.isEmpty()
+                        ? List.of()
+                        : slaRepository.findByIdInWithClient(slaIds);
+            }
+        } else if (clientScopeService.isCurrentUserClient()) {
+            slas = slaRepository.findByClientIdWithClient(clientScopeService.getClientId());
+        } else if (managerScopeService.isCurrentUserManager()) {
+            if (clientId != null) {
+                managerScopeService.assertClientAccess(clientId);
+                slas = slaRepository.findByClientIdWithClient(clientId);
+            } else {
+                Set<Long> clientIds = managerScopeService.getAssignedClientIds();
+                slas = clientIds.isEmpty()
+                        ? List.of()
+                        : slaRepository.findByClientIdIn(clientIds);
+            }
+        } else {
+            slas = clientId == null
+                    ? slaRepository.findAllWithClient()
+                    : slaRepository.findByClientIdWithClient(clientId);
+        }
 
         return slas.stream()
                 .map(this::enrichResponse)
@@ -103,6 +144,9 @@ public class SlaServiceImpl implements SlaService {
 
     @Override
     public SlaResponse getById(Long id) {
+        employeeScopeService.assertSlaAccess(id);
+        managerScopeService.assertSlaAccess(id);
+        clientScopeService.assertSlaAccess(id);
         Sla sla = slaRepository.findByIdWithClient(id)
                 .orElseThrow(() -> new ResourceNotFoundException("SLA", "id", id));
         return enrichResponse(sla);

@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "incidents", indexes = {
         @Index(name = "idx_incidents_sla_id", columnList = "sla_id"),
+        @Index(name = "idx_incidents_project_id", columnList = "project_id"),
         @Index(name = "idx_incidents_severity", columnList = "severity"),
         @Index(name = "idx_incidents_start_time", columnList = "start_time")
 })
@@ -60,4 +61,8 @@ public class Incident extends BaseAuditEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sla_id", nullable = false)
     private Sla sla;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 }

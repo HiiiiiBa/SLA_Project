@@ -27,4 +27,6 @@ public class IncidentCreateRequest {
 
     @NotNull(message = "SLA id is required")
     private Long slaId;
+
+    private Long projectId;
 }

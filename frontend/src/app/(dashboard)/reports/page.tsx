@@ -8,18 +8,21 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/context/AuthContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch, downloadReport } from "@/lib/api";
 import { formatDate, formatScore } from "@/lib/utils";
 import type { Report } from "@/types";
 
 export default function ReportsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, canDownloadReports } = useAuth();
+  const sessionUserId = useSessionUserId();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadReports = useCallback(() => {
+    if (!sessionUserId) return;
     setLoading(true);
     setError(null);
     apiFetch<Report[]>("/api/reports")
@@ -28,7 +31,7 @@ export default function ReportsPage() {
         setError(err instanceof ApiError ? err.message : "Erreur de chargement"),
       )
       .finally(() => setLoading(false));
-  }, []);
+  }, [sessionUserId]);
 
   useEffect(() => {
     loadReports();
@@ -61,20 +64,6 @@ export default function ReportsPage() {
       />
 
       {error && <ErrorBanner message={error} onRetry={loadReports} />}
-
-      <Card className="mb-6">
-        <CardHeader title="Contenu des rapports" />
-        <CardBody>
-          <ul className="grid gap-2 text-sm text-body sm:grid-cols-2 lg:grid-cols-3">
-            <li>Statut SLA (ACTIVE, WARNING, BREACHED…)</li>
-            <li>Uptime réalisé vs objectif</li>
-            <li>Liste des incidents sur la période</li>
-            <li>Liste des alertes sur la période</li>
-            <li>Performance globale (score, verdict)</li>
-            <li>Métriques de monitoring détaillées</li>
-          </ul>
-        </CardBody>
-      </Card>
 
       <Card>
         <CardHeader
@@ -129,29 +118,33 @@ export default function ReportsPage() {
                       {formatDate(report.generatedAt)}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant="secondary"
-                          loading={downloadingId === `${report.id}-pdf`}
-                          onClick={() => handleDownload(report.id, "pdf")}
-                        >
-                          <FileText className="h-4 w-4" />
-                          PDF
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          loading={downloadingId === `${report.id}-csv`}
-                          onClick={() => handleDownload(report.id, "csv")}
-                        >
-                          <FileSpreadsheet className="h-4 w-4" />
-                          CSV
-                        </Button>
-                        {isAdmin && (
-                          <Button variant="danger" onClick={() => handleDelete(report)}>
-                            <Trash2 className="h-4 w-4" />
+                      {canDownloadReports ? (
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="secondary"
+                            loading={downloadingId === `${report.id}-pdf`}
+                            onClick={() => handleDownload(report.id, "pdf")}
+                          >
+                            <FileText className="h-4 w-4" />
+                            PDF
                           </Button>
-                        )}
-                      </div>
+                          <Button
+                            variant="secondary"
+                            loading={downloadingId === `${report.id}-csv`}
+                            onClick={() => handleDownload(report.id, "csv")}
+                          >
+                            <FileSpreadsheet className="h-4 w-4" />
+                            CSV
+                          </Button>
+                          {isAdmin && (
+                            <Button variant="danger" onClick={() => handleDelete(report)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}

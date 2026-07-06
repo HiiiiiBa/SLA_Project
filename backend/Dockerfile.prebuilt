@@ -1,0 +1,20 @@
+# Image runtime sans compilation Maven (JAR construit sur l'hôte).
+# Usage : cd backend && mvn package -DskipTests && cd .. && docker compose -f docker-compose.yml -f docker-compose.local-build.yml up --build -d
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+RUN apk add --no-cache curl \
+    && addgroup -S sla \
+    && adduser -S sla -G sla
+
+USER sla
+
+COPY target/sla-monitoring-*.jar app.jar
+
+EXPOSE 8080
+
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
+ENV SPRING_PROFILES_ACTIVE=prod,docker
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

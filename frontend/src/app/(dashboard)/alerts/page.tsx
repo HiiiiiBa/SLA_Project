@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Select } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { useNotifications } from "@/context/NotificationContext";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
@@ -21,6 +22,7 @@ import type {
 
 export default function AlertsPage() {
   const { isAdmin } = useAuth();
+  const sessionUserId = useSessionUserId();
   const { connected, liveNotifications } = useNotifications();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [slas, setSlas] = useState<Sla[]>([]);
@@ -33,6 +35,7 @@ export default function AlertsPage() {
   const [filterStatus, setFilterStatus] = useState("");
 
   const loadAlerts = useCallback(() => {
+    if (!sessionUserId) return;
     setLoading(true);
     setError(null);
 
@@ -49,13 +52,14 @@ export default function AlertsPage() {
         setError(err instanceof ApiError ? err.message : "Erreur de chargement"),
       )
       .finally(() => setLoading(false));
-  }, [filterSlaId, filterServiceId, filterType, filterStatus]);
+  }, [sessionUserId, filterSlaId, filterServiceId, filterType, filterStatus]);
 
   useEffect(() => {
     loadAlerts();
   }, [loadAlerts]);
 
   useEffect(() => {
+    if (!sessionUserId) return;
     Promise.all([
       apiFetch<Sla[]>("/api/slas"),
       apiFetch<ServiceEntity[]>("/api/services"),
@@ -68,7 +72,7 @@ export default function AlertsPage() {
         setSlas([]);
         setServices([]);
       });
-  }, []);
+  }, [sessionUserId]);
 
   const filteredServices = useMemo(() => {
     if (!filterSlaId) return services;

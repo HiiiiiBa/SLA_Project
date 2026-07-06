@@ -13,6 +13,9 @@ import com.sla.monitoring.exception.ResourceNotFoundException;
 import com.sla.monitoring.mapper.ServiceEntityMapper;
 import com.sla.monitoring.repository.ServiceRepository;
 import com.sla.monitoring.repository.SlaRepository;
+import com.sla.monitoring.service.ClientScopeService;
+import com.sla.monitoring.service.EmployeeScopeService;
+import com.sla.monitoring.service.ManagerScopeService;
 import com.sla.monitoring.service.ServiceEntityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +29,9 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
     private final SlaRepository slaRepository;
     private final ServiceEntityMapper serviceEntityMapper;
     private final AutomaticAlertService automaticAlertService;
+    private final EmployeeScopeService employeeScopeService;
+    private final ManagerScopeService managerScopeService;
+    private final ClientScopeService clientScopeService;
 
     @Override
     @Transactional
@@ -66,9 +72,45 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
 
     @Override
     public java.util.List<ServiceEntityResponse> findAll(Long slaId) {
-        java.util.List<Service> services = slaId == null
-                ? serviceRepository.findAllWithSla()
-                : serviceRepository.findBySlaIdWithSla(slaId);
+        java.util.List<Service> services;
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            java.util.Set<Long> scopedSlaIds = employeeScopeService.getScopedSlaIds();
+            if (scopedSlaIds.isEmpty()) {
+                return java.util.List.of();
+            }
+            if (slaId != null) {
+                employeeScopeService.assertSlaAccess(slaId);
+                services = serviceRepository.findBySlaIdWithSla(slaId);
+            } else {
+                services = serviceRepository.findBySlaIdInWithSla(scopedSlaIds);
+            }
+        } else if (managerScopeService.isCurrentUserManager()) {
+            java.util.Set<Long> scopedSlaIds = managerScopeService.getScopedSlaIds();
+            if (scopedSlaIds.isEmpty()) {
+                return java.util.List.of();
+            }
+            if (slaId != null) {
+                managerScopeService.assertSlaAccess(slaId);
+                services = serviceRepository.findBySlaIdWithSla(slaId);
+            } else {
+                services = serviceRepository.findBySlaIdInWithSla(scopedSlaIds);
+            }
+        } else if (clientScopeService.isCurrentUserClient()) {
+            java.util.Set<Long> scopedSlaIds = clientScopeService.getScopedSlaIds();
+            if (scopedSlaIds.isEmpty()) {
+                return java.util.List.of();
+            }
+            if (slaId != null) {
+                clientScopeService.assertSlaAccess(slaId);
+                services = serviceRepository.findBySlaIdWithSla(slaId);
+            } else {
+                services = serviceRepository.findBySlaIdInWithSla(scopedSlaIds);
+            }
+        } else {
+            services = slaId == null
+                    ? serviceRepository.findAllWithSla()
+                    : serviceRepository.findBySlaIdWithSla(slaId);
+        }
 
         return services.stream()
                 .map(serviceEntityMapper::toResponse)
@@ -82,7 +124,11 @@ public class ServiceEntityServiceImpl implements ServiceEntityService {
 
     @Override
     public ServiceEntityResponse findById(Long id) {
-        return serviceEntityMapper.toResponse(findServiceEntityById(id));
+        Service service = findServiceEntityById(id);
+        employeeScopeService.assertSlaAccess(service.getSla().getId());
+        managerScopeService.assertSlaAccess(service.getSla().getId());
+        clientScopeService.assertSlaAccess(service.getSla().getId());
+        return serviceEntityMapper.toResponse(service);
     }
 
     @Override

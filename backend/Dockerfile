@@ -1,13 +1,17 @@
+# syntax=docker/dockerfile:1
 # Multi-stage build for SLA Monitoring Backend
 
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:go-offline -B
 
 COPY src ./src
-RUN mvn clean package -DskipTests -B
+# package (sans clean) + retries pour réseaux instables dans Docker
+RUN --mount=type=cache,target=/root/.m2 \
+    sh -c 'for i in 1 2 3 4 5; do mvn package -DskipTests -B && exit 0; echo "Maven retry $i/5..."; sleep 15; done; exit 1'
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app

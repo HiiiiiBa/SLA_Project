@@ -17,7 +17,19 @@ interface UserFormModalProps {
   user?: User | null;
 }
 
-const roles: Role[] = ["ADMIN", "USER", "CLIENT"];
+const roleOptions: { value: Role; label: string }[] = [
+  { value: "ADMIN", label: "Administrateur" },
+  { value: "MANAGER", label: "Manager" },
+  { value: "EMPLOYEE", label: "Employé" },
+  { value: "CLIENT", label: "Client" },
+];
+
+function normalizeRole(role?: string): Role {
+  if (role === "ADMIN" || role === "CLIENT" || role === "MANAGER" || role === "EMPLOYEE") {
+    return role;
+  }
+  return "EMPLOYEE";
+}
 
 export function UserFormModal({ open, onClose, onSaved, user }: UserFormModalProps) {
   const isEdit = Boolean(user);
@@ -25,7 +37,7 @@ export function UserFormModal({ open, onClose, onSaved, user }: UserFormModalPro
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Role>("USER");
+  const [role, setRole] = useState<Role>("EMPLOYEE");
   const [enabled, setEnabled] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,7 +48,7 @@ export function UserFormModal({ open, onClose, onSaved, user }: UserFormModalPro
     setLastName(user?.lastName ?? "");
     setEmail(user?.email ?? "");
     setPassword("");
-    setRole(user?.role ?? "USER");
+    setRole(normalizeRole(user?.role));
     setEnabled(user?.enabled ?? true);
     setError("");
   }, [open, user]);
@@ -120,8 +132,10 @@ export function UserFormModal({ open, onClose, onSaved, user }: UserFormModalPro
           <div className="space-y-2">
             <Label htmlFor="user-role">Rôle</Label>
             <Select id="user-role" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-              {roles.map((r) => (
-                <option key={r} value={r}>{r}</option>
+              {roleOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
               ))}
             </Select>
           </div>

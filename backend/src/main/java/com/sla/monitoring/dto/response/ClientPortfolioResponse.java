@@ -14,5 +14,6 @@ import java.util.List;
 public class ClientPortfolioResponse {
 
     private ClientResponse client;
+    private List<ProjectResponse> projects;
     private List<SlaWithServicesResponse> slas;
 }

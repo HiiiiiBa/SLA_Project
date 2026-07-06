@@ -86,6 +86,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<UserResponse> findByRole(com.sla.monitoring.entity.enums.Role role) {
+        return userRepository.findByRole(role).stream()
+                .map(userMapper::toResponse)
+                .toList();
+    }
+
+    @Override
     public UserResponse findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .map(userMapper::toResponse)

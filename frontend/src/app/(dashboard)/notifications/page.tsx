@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Select } from "@/components/ui/Select";
 import { useNotifications } from "@/context/NotificationContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import type { NotificationChannel, NotificationRecord } from "@/types";
@@ -18,12 +19,14 @@ const channels: NotificationChannel[] = ["WEBSOCKET", "EMAIL"];
 
 export default function NotificationsPage() {
   const { connected, liveNotifications, clearLive } = useNotifications();
+  const sessionUserId = useSessionUserId();
   const [history, setHistory] = useState<NotificationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterChannel, setFilterChannel] = useState("");
 
   const loadHistory = useCallback(() => {
+    if (!sessionUserId) return;
     setLoading(true);
     setError(null);
     const query = filterChannel ? `?channel=${filterChannel}` : "";
@@ -33,7 +36,7 @@ export default function NotificationsPage() {
         setError(err instanceof ApiError ? err.message : "Erreur de chargement"),
       )
       .finally(() => setLoading(false));
-  }, [filterChannel]);
+  }, [sessionUserId, filterChannel]);
 
   useEffect(() => {
     loadHistory();

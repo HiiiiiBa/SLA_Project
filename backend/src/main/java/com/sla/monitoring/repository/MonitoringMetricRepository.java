@@ -7,12 +7,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
 public interface MonitoringMetricRepository extends JpaRepository<MonitoringMetric, Long> {
 
     List<MonitoringMetric> findBySlaId(Long slaId);
+
+    List<MonitoringMetric> findBySlaIdIn(Collection<Long> slaIds);
 
     List<MonitoringMetric> findByServiceId(Long serviceId);
 

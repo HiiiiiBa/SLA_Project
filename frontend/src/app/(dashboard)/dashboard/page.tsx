@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   Building2,
-  FileText,
   Gauge,
   Siren,
 } from "lucide-react";
@@ -14,41 +13,54 @@ import { SlaStatusChart } from "@/components/dashboard/SlaStatusChart";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { StatusBadge, SeverityBadge } from "@/components/ui/Badge";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { useAuth } from "@/context/AuthContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
-import type { Alert, Client, Incident, Report, Sla } from "@/types";
+import type { Alert, Client, Incident, Project, Report, Sla } from "@/types";
 
 export default function DashboardPage() {
+  const { hasGlobalDashboard, isEmployee, isClient, isManager, canDownloadReports } = useAuth();
+  const sessionUserId = useSessionUserId();
+  const usesProjectDashboard = !hasGlobalDashboard;
   const [slas, setSlas] = useState<Sla[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
+    if (!sessionUserId) return;
     setLoading(true);
     setError(null);
 
     try {
-      const results = await Promise.allSettled([
-        apiFetch<Sla[]>("/api/slas"),
-        apiFetch<Alert[]>("/api/alerts"),
-        apiFetch<Report[]>("/api/reports"),
-        apiFetch<Client[]>("/api/clients"),
-        apiFetch<Incident[]>("/api/incidents"),
-      ]);
+      const [slaResult, alertResult, thirdResult, incidentResult, reportResult] =
+        await Promise.allSettled([
+          apiFetch<Sla[]>("/api/slas"),
+          apiFetch<Alert[]>("/api/alerts"),
+          usesProjectDashboard
+            ? apiFetch<Project[]>("/api/projects")
+            : apiFetch<Client[]>("/api/clients"),
+          apiFetch<Incident[]>("/api/incidents"),
+          canDownloadReports
+            ? apiFetch<Report[]>("/api/reports")
+            : Promise.resolve([] as Report[]),
+        ]);
 
-      const labels = ["SLA", "alertes", "rapports", "clients", "incidents"];
-      const failures = results
-        .map((result, index) =>
-          result.status === "rejected" ? labels[index] : null,
-        )
+      const labels = usesProjectDashboard
+        ? ["SLA", "alertes", "projets", "incidents", ...(canDownloadReports ? ["rapports"] : [])]
+        : ["SLA", "alertes", "clients", "incidents", ...(canDownloadReports ? ["rapports"] : [])];
+      const resultList = [slaResult, alertResult, thirdResult, incidentResult, reportResult];
+      const failures = resultList
+        .map((result, index) => (result.status === "rejected" ? labels[index] : null))
         .filter(Boolean);
 
       if (failures.length > 0) {
-        const firstError = results.find(
+        const firstError = resultList.find(
           (result): result is PromiseRejectedResult => result.status === "rejected",
         )?.reason;
         const detail =
@@ -58,11 +70,20 @@ export default function DashboardPage() {
         setError(`${detail} (${failures.join(", ")})`);
       }
 
-      if (results[0].status === "fulfilled") setSlas(results[0].value);
-      if (results[1].status === "fulfilled") setAlerts(results[1].value);
-      if (results[2].status === "fulfilled") setReports(results[2].value);
-      if (results[3].status === "fulfilled") setClients(results[3].value);
-      if (results[4].status === "fulfilled") setIncidents(results[4].value);
+      if (slaResult.status === "fulfilled") setSlas(slaResult.value);
+      if (alertResult.status === "fulfilled") setAlerts(alertResult.value);
+      if (reportResult.status === "fulfilled") setReports(reportResult.value);
+      else setReports([]);
+      if (incidentResult.status === "fulfilled") setIncidents(incidentResult.value);
+      if (thirdResult.status === "fulfilled") {
+        if (usesProjectDashboard) {
+          setProjects(thirdResult.value as Project[]);
+          setClients([]);
+        } else {
+          setClients(thirdResult.value as Client[]);
+          setProjects([]);
+        }
+      }
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Erreur de communication avec le serveur",
@@ -70,7 +91,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sessionUserId, usesProjectDashboard, canDownloadReports]);
 
   useEffect(() => {
     loadData();
@@ -85,7 +106,15 @@ export default function DashboardPage() {
     <>
       <Header
         title="Tableau de bord"
-        description="Vue d'ensemble de la santé de vos contrats SLA, alertes et rapports."
+        description={
+          hasGlobalDashboard
+            ? "Vue globale de la santé de tous les contrats SLA, alertes et rapports."
+            : isManager
+              ? "Tableau de bord de vos projets et clients affectés."
+              : isClient
+                ? "Tableau de bord de vos projets et contrats SLA."
+                : "Vue d'ensemble de vos projets, SLA et incidents assignés."
+        }
       />
 
       {error && <ErrorBanner message={error} onRetry={loadData} />}
@@ -169,29 +198,55 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader
-                title="Clients suivis"
-                description={`${clients.length} organisations monitorées`}
-              />
-              <CardBody className="space-y-3">
-                {clients.map((client) => (
-                  <div
-                    key={client.id}
-                    className="flex items-center justify-between rounded-xl border border-border/60 bg-card/50 px-4 py-3"
-                  >
-                    <div>
-                      <p className="font-medium text-heading">{client.name}</p>
-                      <p className="text-xs text-muted">{client.projectName}</p>
+            {usesProjectDashboard ? (
+              <Card>
+                <CardHeader
+                  title="Mes projets"
+                  description={`${projects.length} projet(s) assigné(s)`}
+                />
+                <CardBody className="space-y-3">
+                  {projects.map((project) => (
+                    <div
+                      key={project.id}
+                      className="flex items-center justify-between rounded-xl border border-border/60 bg-card/50 px-4 py-3"
+                    >
+                      <div>
+                        <p className="font-medium text-heading">{project.name}</p>
+                        <p className="text-xs text-muted">{project.clientName}</p>
+                      </div>
+                      <span className="text-xs text-muted">{project.teamName ?? "—"}</span>
                     </div>
-                    <span className="text-xs text-muted">{client.email}</span>
-                  </div>
-                ))}
-                {clients.length === 0 && (
-                  <p className="text-sm text-muted">Aucun client enregistré.</p>
-                )}
-              </CardBody>
-            </Card>
+                  ))}
+                  {projects.length === 0 && (
+                    <p className="text-sm text-muted">Aucun projet assigné.</p>
+                  )}
+                </CardBody>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader
+                  title="Clients suivis"
+                  description={`${clients.length} organisations monitorées`}
+                />
+                <CardBody className="space-y-3">
+                  {clients.map((client) => (
+                    <div
+                      key={client.id}
+                      className="flex items-center justify-between rounded-xl border border-border/60 bg-card/50 px-4 py-3"
+                    >
+                      <div>
+                        <p className="font-medium text-heading">{client.name}</p>
+                        <p className="text-xs text-muted">{client.projectName}</p>
+                      </div>
+                      <span className="text-xs text-muted">{client.email}</span>
+                    </div>
+                  ))}
+                  {clients.length === 0 && (
+                    <p className="text-sm text-muted">Aucun client enregistré.</p>
+                  )}
+                </CardBody>
+              </Card>
+            )}
 
             <Card>
               <CardHeader

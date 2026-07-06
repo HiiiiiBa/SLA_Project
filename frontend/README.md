@@ -39,7 +39,9 @@ Ouvrir [http://localhost:3000](http://localhost:3000)
 | Email | Mot de passe | Rôle |
 |-------|--------------|------|
 | admin@sla.com | Admin123! | ADMIN |
-| user@sla.com | User123! | USER |
+| manager@sla.com | Manager123! | MANAGER (Sophie — Acme, TechStart) |
+| manager2@sla.com | Manager123! | MANAGER (Ahmed — Global Retail, FinServ) |
+| employee1@sla.com | Employee123! | EMPLOYEE |
 | client@acme.com | Client123! | CLIENT |
 
 ## Docker (stack complète)

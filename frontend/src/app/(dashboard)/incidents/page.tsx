@@ -11,32 +11,58 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Select } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
-import type { Incident, IncidentSeverity } from "@/types";
+import type { Incident, IncidentSeverity, Project } from "@/types";
 
 const severities: IncidentSeverity[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
 export default function IncidentsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isEmployee, canCreateIncident } = useAuth();
+  const sessionUserId = useSessionUserId();
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [filterSeverity, setFilterSeverity] = useState("");
+  const [filterProject, setFilterProject] = useState("");
+
+  useEffect(() => {
+    if (!sessionUserId) return;
+    apiFetch<Project[]>("/api/projects")
+      .then(setProjects)
+      .catch(() => setProjects([]));
+  }, [sessionUserId]);
 
   const loadIncidents = useCallback(() => {
+    if (!sessionUserId) return;
     setLoading(true);
     setError(null);
-    const query = filterSeverity ? `?severity=${filterSeverity}` : "";
+    const useApiSeverity = filterSeverity && !filterProject;
+    const useApiProject = filterProject && !filterSeverity;
+    const params = new URLSearchParams();
+    if (useApiSeverity) params.set("severity", filterSeverity);
+    if (useApiProject) params.set("projectId", filterProject);
+    const query = params.toString() ? `?${params}` : "";
     apiFetch<Incident[]>(`/api/incidents${query}`)
-      .then(setIncidents)
+      .then((data) => {
+        let result = data;
+        if (filterSeverity) {
+          result = result.filter((i) => i.severity === filterSeverity);
+        }
+        if (filterProject) {
+          result = result.filter((i) => String(i.projectId ?? "") === filterProject);
+        }
+        setIncidents(result);
+      })
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Erreur de chargement"),
       )
       .finally(() => setLoading(false));
-  }, [filterSeverity]);
+  }, [sessionUserId, filterSeverity, filterProject]);
 
   useEffect(() => {
     loadIncidents();
@@ -65,9 +91,13 @@ export default function IncidentsPage() {
     <>
       <Header
         title="Incidents"
-        description="Suivi des incidents impactant vos contrats SLA."
+        description={
+          isEmployee
+            ? "Incidents liés à vos projets et SLA assignés."
+            : "Suivi des incidents impactant vos contrats SLA."
+        }
         action={
-          isAdmin ? (
+          canCreateIncident ? (
             <Button
               onClick={() => {
                 setSelectedIncident(null);
@@ -84,23 +114,41 @@ export default function IncidentsPage() {
       {error && <ErrorBanner message={error} onRetry={loadIncidents} />}
 
       <Card className="mb-6">
-        <CardHeader title="Filtres" description="Filtrer par niveau de sévérité" />
+        <CardHeader title="Filtres" description="Filtrer par sévérité ou projet" />
         <CardBody>
-          <div className="max-w-xs space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted">
-              Sévérité
-            </label>
-            <Select
-              value={filterSeverity}
-              onChange={(e) => setFilterSeverity(e.target.value)}
-            >
-              <option value="">Toutes les sévérités</option>
-              {severities.map((severity) => (
-                <option key={severity} value={severity}>
-                  {severity}
-                </option>
-              ))}
-            </Select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted">
+                Sévérité
+              </label>
+              <Select
+                value={filterSeverity}
+                onChange={(e) => setFilterSeverity(e.target.value)}
+              >
+                <option value="">Toutes les sévérités</option>
+                {severities.map((severity) => (
+                  <option key={severity} value={severity}>
+                    {severity}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted">
+                Projet
+              </label>
+              <Select
+                value={filterProject}
+                onChange={(e) => setFilterProject(e.target.value)}
+              >
+                <option value="">Tous les projets</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name} ({project.clientName})
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
         </CardBody>
       </Card>
@@ -118,6 +166,7 @@ export default function IncidentsPage() {
               <thead className="table-head">
                 <tr>
                   <th className="px-6 py-4 font-medium">SLA</th>
+                  <th className="px-6 py-4 font-medium">Projet</th>
                   <th className="px-6 py-4 font-medium">Début</th>
                   <th className="px-6 py-4 font-medium">Fin</th>
                   <th className="px-6 py-4 font-medium">Sévérité</th>
@@ -129,6 +178,7 @@ export default function IncidentsPage() {
                 {incidents.map((incident) => (
                   <tr key={incident.id} className="table-row">
                     <td className="px-6 py-4 text-body">#{incident.slaId}</td>
+                    <td className="px-6 py-4 text-body">{incident.projectName ?? "—"}</td>
                     <td className="px-6 py-4 text-body">{formatDate(incident.startTime)}</td>
                     <td className="px-6 py-4 text-body">
                       {incident.endTime ? formatDate(incident.endTime) : "En cours"}
@@ -175,7 +225,7 @@ export default function IncidentsPage() {
         </CardBody>
       </Card>
 
-      {isAdmin && (
+      {canCreateIncident && (
         <IncidentFormModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}

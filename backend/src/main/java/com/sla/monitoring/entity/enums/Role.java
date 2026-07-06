@@ -5,6 +5,7 @@ package com.sla.monitoring.entity.enums;
  */
 public enum Role {
     ADMIN,
-    USER,
-    CLIENT
+    CLIENT,
+    MANAGER,
+    EMPLOYEE
 }

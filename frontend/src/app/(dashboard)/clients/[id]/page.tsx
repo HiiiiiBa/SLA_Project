@@ -3,13 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Building2, Gauge, Server } from "lucide-react";
+import { ArrowLeft, Building2, FolderKanban, Gauge, Server } from "lucide-react";
+import { ProjectFormModal } from "@/components/forms/ProjectFormModal";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
 import { ServiceStatusBadge, StatusBadge } from "@/components/ui/Badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { useAuth } from "@/context/AuthContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate, formatPercent } from "@/lib/utils";
 import type { ClientPortfolio } from "@/types";
@@ -17,12 +20,15 @@ import type { ClientPortfolio } from "@/types";
 export default function ClientDetailPage() {
   const params = useParams();
   const clientId = Number(params.id);
+  const { canManageOrg } = useAuth();
+  const sessionUserId = useSessionUserId();
   const [portfolio, setPortfolio] = useState<ClientPortfolio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
 
   const loadPortfolio = useCallback(() => {
-    if (!clientId) return;
+    if (!clientId || !sessionUserId) return;
     setLoading(true);
     setError(null);
     apiFetch<ClientPortfolio>(`/api/clients/${clientId}/portfolio`)
@@ -31,7 +37,7 @@ export default function ClientDetailPage() {
         setError(err instanceof ApiError ? err.message : "Erreur de chargement"),
       )
       .finally(() => setLoading(false));
-  }, [clientId]);
+  }, [clientId, sessionUserId]);
 
   useEffect(() => {
     loadPortfolio();
@@ -51,7 +57,7 @@ export default function ClientDetailPage() {
     );
   }
 
-  const { client, slas } = portfolio;
+  const { client, projects, slas } = portfolio;
   const totalServices = slas.reduce((sum, sla) => sum + sla.services.length, 0);
 
   return (
@@ -68,12 +74,18 @@ export default function ClientDetailPage() {
 
       <Header
         title={client.name}
-        description={`${client.projectName ?? "Projet non renseigné"} — ${client.email}`}
+        description={`${client.email} — ${projects.length} projet(s)`}
       />
 
       {error && <ErrorBanner message={error} onRetry={loadPortfolio} />}
 
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
+      <div className="mb-6 grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardBody>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Projets</p>
+            <p className="mt-2 text-2xl font-bold text-heading">{projects.length}</p>
+          </CardBody>
+        </Card>
         <Card>
           <CardBody>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted">SLA</p>
@@ -93,6 +105,60 @@ export default function ClientDetailPage() {
           </CardBody>
         </Card>
       </div>
+
+      <Card className="mb-6">
+        <CardHeader
+          title="Projets du client"
+          description="Un client peut être associé à plusieurs projets."
+          action={
+            canManageOrg ? (
+              <Button onClick={() => setProjectModalOpen(true)}>Nouveau projet</Button>
+            ) : undefined
+          }
+        />
+        <CardBody className="overflow-x-auto p-0">
+          {projects.length === 0 ? (
+            <div className="px-6 py-8 text-sm text-muted">Aucun projet associé à ce client.</div>
+          ) : (
+            <table className="min-w-full text-sm">
+              <thead className="table-head">
+                <tr>
+                  <th className="px-6 py-4 font-medium">Nom</th>
+                  <th className="px-6 py-4 font-medium">Équipe</th>
+                  <th className="px-6 py-4 font-medium">Employés</th>
+                  <th className="px-6 py-4 font-medium">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map((project) => (
+                  <tr key={project.id} className="table-row">
+                    <td className="px-6 py-4 font-medium text-heading">
+                      <span className="inline-flex items-center gap-2">
+                        <FolderKanban className="h-4 w-4 text-muted" />
+                        <Link href="/projects" className="hover:text-primary">
+                          {project.name}
+                        </Link>
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-body">{project.teamName ?? "—"}</td>
+                    <td className="px-6 py-4 text-body">{project.memberCount}</td>
+                    <td className="px-6 py-4 text-body">{project.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardBody>
+      </Card>
+
+      {canManageOrg && (
+        <ProjectFormModal
+          open={projectModalOpen}
+          onClose={() => setProjectModalOpen(false)}
+          onSaved={loadPortfolio}
+          defaultClientId={clientId}
+        />
+      )}
 
       {slas.length === 0 ? (
         <EmptyState

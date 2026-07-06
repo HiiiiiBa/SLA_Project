@@ -6,8 +6,11 @@ import com.sla.monitoring.entity.enums.AlertType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,4 +53,13 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
                              @Param("serviceId") Long serviceId,
                              @Param("type") AlertType type,
                              @Param("status") AlertStatus status);
+
+    @Query("""
+            SELECT a FROM Alert a
+            JOIN FETCH a.sla s
+            LEFT JOIN FETCH a.service
+            WHERE s.id IN :slaIds
+            ORDER BY a.createdAt DESC
+            """)
+    List<Alert> findBySlaIdIn(@Param("slaIds") Collection<Long> slaIds);
 }

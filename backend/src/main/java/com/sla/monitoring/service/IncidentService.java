@@ -26,4 +26,6 @@ public interface IncidentService {
     List<IncidentResponse> findBySeverity(IncidentSeverity severity);
 
     List<IncidentResponse> findBySlaId(Long slaId);
+
+    List<IncidentResponse> findByProjectId(Long projectId);
 }

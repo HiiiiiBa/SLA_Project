@@ -12,12 +12,14 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/context/AuthContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate, formatPercent } from "@/lib/utils";
 import type { Sla } from "@/types";
 
 export default function SlasPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isEmployee, isManager, canManageSla } = useAuth();
+  const sessionUserId = useSessionUserId();
   const [slas, setSlas] = useState<Sla[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +27,7 @@ export default function SlasPage() {
   const [selectedSla, setSelectedSla] = useState<Sla | null>(null);
 
   const loadSlas = useCallback(() => {
+    if (!sessionUserId) return;
     setLoading(true);
     setError(null);
     apiFetch<Sla[]>("/api/slas")
@@ -33,7 +36,7 @@ export default function SlasPage() {
         setError(err instanceof ApiError ? err.message : "Erreur de chargement"),
       )
       .finally(() => setLoading(false));
-  }, []);
+  }, [sessionUserId]);
 
   useEffect(() => {
     loadSlas();
@@ -53,9 +56,15 @@ export default function SlasPage() {
     <>
       <Header
         title="Contrats SLA"
-        description="Liste des accords de niveau de service monitorés et leurs seuils."
+        description={
+          isEmployee
+            ? "SLA des clients liés à vos projets assignés."
+            : isManager
+              ? "SLA de vos clients affectés — création et modification autorisées."
+              : "Liste des accords de niveau de service monitorés et leurs seuils."
+        }
         action={
-          isAdmin ? (
+          canManageSla ? (
             <Button
               onClick={() => {
                 setSelectedSla(null);
@@ -114,7 +123,7 @@ export default function SlasPage() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
-                        {isAdmin && (
+                        {(isAdmin || isManager) && (
                           <>
                             <Button
                               variant="secondary"
@@ -127,14 +136,16 @@ export default function SlasPage() {
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="danger"
-                              className="!px-2.5 !py-2"
-                              title="Supprimer"
-                              onClick={() => handleDelete(sla)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {isAdmin && (
+                              <Button
+                                variant="danger"
+                                className="!px-2.5 !py-2"
+                                title="Supprimer"
+                                onClick={() => handleDelete(sla)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                             <SlaLifecycleActions
                               sla={sla}
                               onChanged={loadSlas}
@@ -160,7 +171,7 @@ export default function SlasPage() {
         </CardBody>
       </Card>
 
-      {isAdmin && (
+      {canManageSla && (
         <SlaFormModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}

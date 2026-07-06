@@ -13,12 +13,16 @@ import com.sla.monitoring.mapper.MonitoringMetricMapper;
 import com.sla.monitoring.repository.MonitoringMetricRepository;
 import com.sla.monitoring.repository.ServiceRepository;
 import com.sla.monitoring.repository.SlaRepository;
+import com.sla.monitoring.service.ClientScopeService;
+import com.sla.monitoring.service.EmployeeScopeService;
+import com.sla.monitoring.service.ManagerScopeService;
 import com.sla.monitoring.service.MonitoringMetricService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @org.springframework.stereotype.Service
 @RequiredArgsConstructor
@@ -30,6 +34,9 @@ public class MonitoringMetricServiceImpl implements MonitoringMetricService {
     private final SlaRepository slaRepository;
     private final MonitoringMetricMapper monitoringMetricMapper;
     private final AutomaticAlertService automaticAlertService;
+    private final EmployeeScopeService employeeScopeService;
+    private final ManagerScopeService managerScopeService;
+    private final ClientScopeService clientScopeService;
 
     @Override
     @Transactional
@@ -62,7 +69,31 @@ public class MonitoringMetricServiceImpl implements MonitoringMetricService {
 
     @Override
     public List<MonitoringMetricResponse> findAll() {
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            Set<Long> slaIds = employeeScopeService.getScopedSlaIds();
+            return slaIds.isEmpty()
+                    ? List.of()
+                    : filterAndMap(monitoringMetricRepository.findBySlaIdIn(slaIds));
+        }
+        if (managerScopeService.isCurrentUserManager()) {
+            Set<Long> slaIds = managerScopeService.getScopedSlaIds();
+            return slaIds.isEmpty()
+                    ? List.of()
+                    : filterAndMap(monitoringMetricRepository.findBySlaIdIn(slaIds));
+        }
+        if (clientScopeService.isCurrentUserClient()) {
+            Set<Long> slaIds = clientScopeService.getScopedSlaIds();
+            return slaIds.isEmpty()
+                    ? List.of()
+                    : filterAndMap(monitoringMetricRepository.findBySlaIdIn(slaIds));
+        }
         return monitoringMetricRepository.findAll().stream()
+                .map(monitoringMetricMapper::toResponse)
+                .toList();
+    }
+
+    private List<MonitoringMetricResponse> filterAndMap(List<MonitoringMetric> metrics) {
+        return metrics.stream()
                 .map(monitoringMetricMapper::toResponse)
                 .toList();
     }
@@ -71,6 +102,9 @@ public class MonitoringMetricServiceImpl implements MonitoringMetricService {
     public MonitoringMetricResponse findById(Long id) {
         MonitoringMetric metric = monitoringMetricRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("MonitoringMetric", "id", id));
+        employeeScopeService.assertSlaAccess(metric.getSla().getId());
+        managerScopeService.assertSlaAccess(metric.getSla().getId());
+        clientScopeService.assertSlaAccess(metric.getSla().getId());
         return monitoringMetricMapper.toResponse(metric);
     }
 
@@ -79,6 +113,10 @@ public class MonitoringMetricServiceImpl implements MonitoringMetricService {
         if (!serviceRepository.existsById(serviceId)) {
             throw new ResourceNotFoundException("Service", "id", serviceId);
         }
+        Service service = findServiceById(serviceId);
+        employeeScopeService.assertSlaAccess(service.getSla().getId());
+        managerScopeService.assertSlaAccess(service.getSla().getId());
+        clientScopeService.assertSlaAccess(service.getSla().getId());
         return monitoringMetricRepository.findByServiceId(serviceId).stream()
                 .map(monitoringMetricMapper::toResponse)
                 .toList();
@@ -86,6 +124,9 @@ public class MonitoringMetricServiceImpl implements MonitoringMetricService {
 
     @Override
     public List<MonitoringMetricResponse> findBySla(Long slaId) {
+        employeeScopeService.assertSlaAccess(slaId);
+        managerScopeService.assertSlaAccess(slaId);
+        clientScopeService.assertSlaAccess(slaId);
         if (!slaRepository.existsById(slaId)) {
             throw new ResourceNotFoundException("SLA", "id", slaId);
         }
@@ -99,7 +140,24 @@ public class MonitoringMetricServiceImpl implements MonitoringMetricService {
         if (start.isAfter(end)) {
             throw new BusinessException("Start date must be before end date");
         }
-        return monitoringMetricRepository.findByTimestampBetween(start, end).stream()
+        List<MonitoringMetric> metrics = monitoringMetricRepository.findByTimestampBetween(start, end);
+        if (employeeScopeService.isCurrentUserEmployee()) {
+            Set<Long> slaIds = employeeScopeService.getScopedSlaIds();
+            metrics = metrics.stream()
+                    .filter(metric -> slaIds.contains(metric.getSla().getId()))
+                    .toList();
+        } else if (managerScopeService.isCurrentUserManager()) {
+            Set<Long> slaIds = managerScopeService.getScopedSlaIds();
+            metrics = metrics.stream()
+                    .filter(metric -> slaIds.contains(metric.getSla().getId()))
+                    .toList();
+        } else if (clientScopeService.isCurrentUserClient()) {
+            Set<Long> slaIds = clientScopeService.getScopedSlaIds();
+            metrics = metrics.stream()
+                    .filter(metric -> slaIds.contains(metric.getSla().getId()))
+                    .toList();
+        }
+        return metrics.stream()
                 .map(monitoringMetricMapper::toResponse)
                 .toList();
     }

@@ -11,12 +11,14 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/context/AuthContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import type { Client } from "@/types";
 
 export default function ClientsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isManager, canViewClients } = useAuth();
+  const sessionUserId = useSessionUserId();
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,7 @@ export default function ClientsPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   const loadClients = useCallback(() => {
+    if (!sessionUserId) return;
     setLoading(true);
     setError(null);
     apiFetch<Client[]>("/api/clients")
@@ -33,15 +36,15 @@ export default function ClientsPage() {
         setError(err instanceof ApiError ? err.message : "Erreur de chargement"),
       )
       .finally(() => setLoading(false));
-  }, []);
+  }, [sessionUserId]);
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (!canViewClients) {
       router.replace("/dashboard");
       return;
     }
     loadClients();
-  }, [isAdmin, router, loadClients]);
+  }, [canViewClients, router, loadClients, sessionUserId]);
 
   async function handleDelete(client: Client) {
     if (!confirm(`Supprimer le client "${client.name}" ?`)) return;
@@ -53,23 +56,29 @@ export default function ClientsPage() {
     }
   }
 
-  if (!isAdmin) return null;
+  if (!canViewClients) return null;
 
   return (
     <>
       <Header
         title="Clients"
-        description="Gestion des clients associés aux contrats SLA."
+        description={
+          isManager && !isAdmin
+            ? "Clients qui vous sont affectés en tant que manager."
+            : "Gestion des clients associés aux contrats SLA."
+        }
         action={
-          <Button
-            onClick={() => {
-              setSelectedClient(null);
-              setModalOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Nouveau client
-          </Button>
+          isAdmin ? (
+            <Button
+              onClick={() => {
+                setSelectedClient(null);
+                setModalOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Nouveau client
+            </Button>
+          ) : undefined
         }
       />
 
@@ -108,18 +117,22 @@ export default function ClientsPage() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
-                        <Button
-                          variant="secondary"
-                          onClick={() => {
-                            setSelectedClient(client);
-                            setModalOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="danger" onClick={() => handleDelete(client)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {isAdmin && (
+                          <>
+                            <Button
+                              variant="secondary"
+                              onClick={() => {
+                                setSelectedClient(client);
+                                setModalOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="danger" onClick={() => handleDelete(client)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -137,12 +150,14 @@ export default function ClientsPage() {
         </CardBody>
       </Card>
 
-      <ClientFormModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSaved={loadClients}
-        client={selectedClient}
-      />
+      {isAdmin && (
+        <ClientFormModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSaved={loadClients}
+          client={selectedClient}
+        />
+      )}
     </>
   );
 }

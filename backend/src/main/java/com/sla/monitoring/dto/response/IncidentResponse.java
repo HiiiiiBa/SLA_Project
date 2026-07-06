@@ -20,6 +20,8 @@ public class IncidentResponse {
     private IncidentSeverity severity;
     private String description;
     private Long slaId;
+    private Long projectId;
+    private String projectName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

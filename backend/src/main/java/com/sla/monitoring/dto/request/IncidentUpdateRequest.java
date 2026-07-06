@@ -26,4 +26,6 @@ public class IncidentUpdateRequest {
 
     @NotBlank(message = "Description is required")
     private String description;
+
+    private Long projectId;
 }

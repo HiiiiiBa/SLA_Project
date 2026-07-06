@@ -14,6 +14,7 @@ import type {
   IncidentCreateRequest,
   IncidentSeverity,
   IncidentUpdateRequest,
+  Project,
   Sla,
 } from "@/types";
 
@@ -36,7 +37,9 @@ export function IncidentFormModal({
 }: IncidentFormModalProps) {
   const isEdit = Boolean(incident);
   const [slas, setSlas] = useState<Sla[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [slaId, setSlaId] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [severity, setSeverity] = useState<IncidentSeverity>("MEDIUM");
@@ -46,12 +49,24 @@ export function IncidentFormModal({
 
   useEffect(() => {
     if (!open) return;
-    apiFetch<Sla[]>("/api/slas").then(setSlas).catch(() => setSlas([]));
+    Promise.all([
+      apiFetch<Sla[]>("/api/slas"),
+      apiFetch<Project[]>("/api/projects"),
+    ])
+      .then(([slaData, projectData]) => {
+        setSlas(slaData);
+        setProjects(projectData);
+      })
+      .catch(() => {
+        setSlas([]);
+        setProjects([]);
+      });
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     setSlaId(String(incident?.slaId ?? defaultSlaId ?? ""));
+    setProjectId(incident?.projectId ? String(incident.projectId) : "");
     setStartTime(toInputDateTime(incident?.startTime) || nowForInput());
     setEndTime(toInputDateTime(incident?.endTime));
     setSeverity(incident?.severity ?? "MEDIUM");
@@ -71,6 +86,7 @@ export function IncidentFormModal({
           endTime: endTime ? toApiDateTime(endTime) : null,
           severity,
           description,
+          projectId: projectId ? Number(projectId) : undefined,
         };
         await apiFetch<Incident>(`/api/incidents/${incident.id}`, {
           method: "PUT",
@@ -82,6 +98,7 @@ export function IncidentFormModal({
           severity,
           description,
           slaId: Number(slaId),
+          projectId: projectId ? Number(projectId) : undefined,
         };
         await apiFetch<Incident>("/api/incidents", {
           method: "POST",
@@ -123,6 +140,21 @@ export function IncidentFormModal({
             </Select>
           </div>
         )}
+        <div className="space-y-2">
+          <Label htmlFor="incident-project">Projet (optionnel)</Label>
+          <Select
+            id="incident-project"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+          >
+            <option value="">Aucun projet</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name} — {project.clientName}
+              </option>
+            ))}
+          </Select>
+        </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="incident-start">Début</Label>

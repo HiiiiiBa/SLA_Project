@@ -10,12 +10,14 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/context/AuthContext";
+import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import type { ServiceEntity } from "@/types";
 
 export default function ServicesPage() {
   const { isAdmin } = useAuth();
+  const sessionUserId = useSessionUserId();
   const [services, setServices] = useState<ServiceEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +25,7 @@ export default function ServicesPage() {
   const [selectedService, setSelectedService] = useState<ServiceEntity | null>(null);
 
   const loadServices = useCallback(() => {
+    if (!sessionUserId) return;
     setLoading(true);
     setError(null);
     apiFetch<ServiceEntity[]>("/api/services")
@@ -31,7 +34,7 @@ export default function ServicesPage() {
         setError(err instanceof ApiError ? err.message : "Erreur de chargement"),
       )
       .finally(() => setLoading(false));
-  }, []);
+  }, [sessionUserId]);
 
   useEffect(() => {
     loadServices();

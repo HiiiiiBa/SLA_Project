@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,4 +23,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     @Query("SELECT r FROM Report r JOIN FETCH r.sla s JOIN FETCH s.client WHERE r.id = :id")
     Optional<Report> findByIdWithSlaAndClient(@Param("id") Long id);
+
+    @Query("SELECT r FROM Report r JOIN FETCH r.sla s JOIN FETCH s.client WHERE s.id IN :slaIds ORDER BY r.generatedAt DESC")
+    List<Report> findBySlaIdIn(@Param("slaIds") Collection<Long> slaIds);
 }

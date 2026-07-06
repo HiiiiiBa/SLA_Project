@@ -1,0 +1,9 @@
+# Build backend depuis le JAR local (évite Maven dans Docker si le réseau est instable).
+#   cd backend && mvn package -DskipTests
+#   cd .. && docker compose -f docker-compose.yml -f docker-compose.local-build.yml up --build -d
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prebuilt
