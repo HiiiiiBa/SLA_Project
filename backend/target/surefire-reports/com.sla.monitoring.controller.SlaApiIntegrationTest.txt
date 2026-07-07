@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.sla.monitoring.controller.SlaApiIntegrationTest
--------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 34.09 s -- in com.sla.monitoring.controller.SlaApiIntegrationTest

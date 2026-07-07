@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { Activity, Menu, X } from "lucide-react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { RoleRouteGuard } from "@/components/auth/RoleRouteGuard";
@@ -9,6 +10,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
+import { FloatingChatbot } from "@/components/ai/FloatingChatbot";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -41,7 +43,19 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Sidebar */}
-        <div className={`${mobileOpen ? "block" : "hidden"} lg:block`}>
+        <div
+          className={cn(
+            mobileOpen ? "fixed inset-0 z-40 lg:contents" : "hidden lg:contents",
+          )}
+        >
+          {mobileOpen && (
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/40 lg:hidden"
+              onClick={() => setMobileOpen(false)}
+              aria-label="Fermer le menu"
+            />
+          )}
           <Sidebar onNavigate={() => setMobileOpen(false)} />
         </div>
 
@@ -57,6 +71,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </main>
+        <FloatingChatbot />
         </div>
       </NotificationProvider>
     </AuthGuard>

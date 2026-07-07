@@ -43,6 +43,12 @@ app:
   demo:
     seed-enabled: true
 
+gemini:
+  enabled: ${GEMINI_ENABLED:true}
+  api-key: ${GEMINI_API_KEY:}
+  model: ${GEMINI_MODEL:gemini-2.5-flash}
+  base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+
 management:
   endpoints:
     web:

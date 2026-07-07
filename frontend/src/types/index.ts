@@ -335,6 +335,30 @@ export interface IncidentCommentCreateRequest {
   content: string;
 }
 
+export type AiEstimatedPriority = "Low" | "Medium" | "High" | "Critical";
+
+export interface IncidentAnalysis {
+  summary: string;
+  probableCause: string;
+  businessImpact: string;
+  estimatedPriority: AiEstimatedPriority | string;
+  recommendedSteps: string[];
+}
+
+export interface AiChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AiChatRequest {
+  message: string;
+  history?: AiChatMessage[];
+}
+
+export interface AiChatResponse {
+  reply: string;
+}
+
 export interface User {
   id: number;
   firstName: string;

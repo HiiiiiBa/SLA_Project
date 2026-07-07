@@ -81,7 +81,7 @@ export function NotificationBell() {
             )}
           </div>
 
-          <div className="max-h-80 overflow-y-auto">
+          <div className="scroll-area max-h-80 overflow-y-auto bg-card">
             {liveNotifications.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Bell className="mx-auto h-8 w-8 text-muted/50" />

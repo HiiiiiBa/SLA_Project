@@ -1,8 +1,0 @@
-C:\Users\HP\Desktop\SLA_Project\backend\src\test\java\com\sla\monitoring\controller\SlaApiIntegrationTest.java
-C:\Users\HP\Desktop\SLA_Project\backend\src\test\java\com\sla\monitoring\engine\SlaCalculatorTest.java
-C:\Users\HP\Desktop\SLA_Project\backend\src\test\java\com\sla\monitoring\notification\AlertNotificationServiceImplTest.java
-C:\Users\HP\Desktop\SLA_Project\backend\src\test\java\com\sla\monitoring\report\CsvReportGeneratorTest.java
-C:\Users\HP\Desktop\SLA_Project\backend\src\test\java\com\sla\monitoring\report\PdfReportGeneratorTest.java
-C:\Users\HP\Desktop\SLA_Project\backend\src\test\java\com\sla\monitoring\security\AuthSecurityIntegrationTest.java
-C:\Users\HP\Desktop\SLA_Project\backend\src\test\java\com\sla\monitoring\simulation\MetricSimulatorTest.java
-C:\Users\HP\Desktop\SLA_Project\backend\src\test\java\com\sla\monitoring\SlaMonitoringApplicationTests.java

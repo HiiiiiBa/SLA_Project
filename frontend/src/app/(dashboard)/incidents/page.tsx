@@ -173,9 +173,7 @@ export default function IncidentsPage() {
                   <th className="px-6 py-4 font-medium">Sévérité</th>
                   <th className="px-6 py-4 font-medium">Assigné à</th>
                   <th className="px-6 py-4 font-medium">Description</th>
-                  {(canModifyIncident || canAssignIncident) && (
-                    <th className="px-6 py-4 font-medium">Actions</th>
-                  )}
+                  <th className="px-6 py-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -195,47 +193,45 @@ export default function IncidentsPage() {
                     </td>
                     <td className="px-6 py-4 text-body">{incident.assigneeName ?? "—"}</td>
                     <td className="max-w-sm px-6 py-4 text-body">{incident.description}</td>
-                    {(canModifyIncident || canAssignIncident) && (
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          {(canModifyIncident || canAssignIncident) && (
-                            <>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="secondary"
+                          title="Voir / Analyser"
+                          onClick={() => {
+                            setSelectedIncident(incident);
+                            setWorkflowOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {(canModifyIncident || canAssignIncident) && (
+                          <>
+                            {canModifyIncident && !isEmployee && !incident.endTime && incident.status !== "RESOLVED" && (
                               <Button
                                 variant="secondary"
-                                title={canAssignIncident ? "Gérer" : "Traiter"}
+                                title="Modifier"
                                 onClick={() => {
                                   setSelectedIncident(incident);
-                                  setWorkflowOpen(true);
+                                  if (isAdmin) {
+                                    setModalOpen(true);
+                                  } else {
+                                    setWorkflowOpen(true);
+                                  }
                                 }}
                               >
-                                <Eye className="h-4 w-4" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
-                              {canModifyIncident && !isEmployee && !incident.endTime && incident.status !== "RESOLVED" && (
-                                <Button
-                                  variant="secondary"
-                                  title="Modifier"
-                                  onClick={() => {
-                                    setSelectedIncident(incident);
-                                    if (isAdmin) {
-                                      setModalOpen(true);
-                                    } else {
-                                      setWorkflowOpen(true);
-                                    }
-                                  }}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              )}
-                              {isAdmin && !incident.endTime && (
-                                <Button variant="secondary" onClick={() => handleClose(incident)}>
-                                  <CheckCircle2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    )}
+                            )}
+                            {isAdmin && !incident.endTime && (
+                              <Button variant="secondary" onClick={() => handleClose(incident)}>
+                                <CheckCircle2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -264,7 +260,7 @@ export default function IncidentsPage() {
         />
       )}
 
-      {selectedIncident && (canModifyIncident || canAssignIncident) && (
+      {selectedIncident && (
         <IncidentWorkflowModal
           open={workflowOpen}
           onClose={() => {

@@ -1,8 +1,0 @@
-com\sla\monitoring\report\PdfReportGeneratorTest.class
-com\sla\monitoring\SlaMonitoringApplicationTests.class
-com\sla\monitoring\engine\SlaCalculatorTest.class
-com\sla\monitoring\report\CsvReportGeneratorTest.class
-com\sla\monitoring\controller\SlaApiIntegrationTest.class
-com\sla\monitoring\notification\AlertNotificationServiceImplTest.class
-com\sla\monitoring\security\AuthSecurityIntegrationTest.class
-com\sla\monitoring\simulation\MetricSimulatorTest.class

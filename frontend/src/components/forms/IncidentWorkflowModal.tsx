@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, UserCheck } from "lucide-react";
+import { CheckCircle2, Sparkles, UserCheck } from "lucide-react";
+import { IncidentAnalysisCard } from "@/components/ai/IncidentAnalysisCard";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Label";
 import { Modal } from "@/components/ui/Modal";
@@ -14,6 +15,7 @@ import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import type {
   Incident,
+  IncidentAnalysis,
   IncidentComment,
   IncidentCommentCreateRequest,
   IncidentStatus,
@@ -47,6 +49,8 @@ export function IncidentWorkflowModal({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [commentLoading, setCommentLoading] = useState(false);
+  const [analysis, setAnalysis] = useState<IncidentAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
 
   const isResolved = incident.status === "RESOLVED";
   const isAssignedToSelf =
@@ -137,6 +141,7 @@ export function IncidentWorkflowModal({
     setAssigneeId(incident.assigneeId ? String(incident.assigneeId) : "");
     setCommentText("");
     setError("");
+    setAnalysis(null);
   }, [open, incident, loadComments, loadCandidates]);
 
   async function handleSaveDescription(event: React.FormEvent) {
@@ -203,6 +208,21 @@ export function IncidentWorkflowModal({
     }
   }
 
+  async function handleAnalyze() {
+    setAnalysisLoading(true);
+    setError("");
+    try {
+      const result = await apiFetch<IncidentAnalysis>(`/api/incidents/${incident.id}/analyze`, {
+        method: "POST",
+      });
+      setAnalysis(result);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Analyse impossible");
+    } finally {
+      setAnalysisLoading(false);
+    }
+  }
+
   async function handleAddComment(event: React.FormEvent) {
     event.preventDefault();
     if (!canComment || !commentText.trim()) return;
@@ -228,6 +248,7 @@ export function IncidentWorkflowModal({
     <Modal
       open={open}
       onClose={onClose}
+      size="large"
       title={`Incident #${incident.id}`}
       description={
         isEmployee
@@ -253,6 +274,20 @@ export function IncidentWorkflowModal({
             </span>
           )}
         </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            loading={analysisLoading}
+            onClick={handleAnalyze}
+          >
+            <Sparkles className="h-4 w-4" />
+            Analyser
+          </Button>
+        </div>
+
+        {analysis && <IncidentAnalysisCard analysis={analysis} />}
 
         {canAssign && (
           <div className="space-y-3 rounded-xl border border-border bg-card/50 p-4">
@@ -325,7 +360,7 @@ export function IncidentWorkflowModal({
 
         <div className="space-y-3">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Commentaires</h3>
-          <div className="max-h-48 space-y-3 overflow-y-auto">
+          <div className="max-h-48 scroll-area space-y-3 overflow-y-auto rounded-xl bg-card/50 p-1">
             {comments.map((comment) => (
               <div key={comment.id} className="rounded-xl border border-border/60 bg-card/50 p-3">
                 <div className="flex items-center justify-between gap-2">

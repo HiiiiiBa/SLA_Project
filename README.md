@@ -238,6 +238,30 @@ docker compose up --build backend -d
 docker compose ps
 ```
 
+## Assistant IA (Google Gemini)
+
+Deux fonctionnalités sont disponibles pour tous les rôles authentifiés (données filtrées selon le périmètre utilisateur) :
+
+| Fonctionnalité | Accès | Endpoint |
+|----------------|-------|----------|
+| **Analyse d'incident** | Page Incidents → ouvrir un incident → bouton **Analyser** | `POST /api/incidents/{id}/analyze` |
+| **Chatbot flottant** | Bouton en bas à droite sur toutes les pages du dashboard | `POST /api/ai/chat` |
+
+### Configuration
+
+1. Obtenez une clé API sur [Google AI Studio](https://aistudio.google.com/apikey).
+2. Ajoutez-la dans `.env` :
+
+```bash
+GEMINI_API_KEY=votre_cle_api
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_ENABLED=true
+```
+
+3. Redémarrez le backend : `docker compose up --build backend -d`
+
+La clé **ne doit jamais** être exposée côté frontend — tous les appels passent par le backend Spring Boot.
+
 ## Notes
 
 - Si le port **8080** ou **3000** est déjà utilisé, arrêtez les processus locaux (`mvn spring-boot:run`, `npm run dev`) ou modifiez les ports dans `.env`.

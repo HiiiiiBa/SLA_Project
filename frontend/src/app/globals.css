@@ -156,6 +156,58 @@ table {
   @apply border-b border-border hover:bg-card/50 transition-colors duration-200;
 }
 
+/* Scrollable regions — track/thumb follow theme (dark mode included) */
+.scroll-area {
+  background-color: var(--card);
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted) 55%, var(--border)) var(--card);
+}
+
+.scroll-area::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scroll-area::-webkit-scrollbar-track {
+  background: var(--card);
+  border-radius: 4px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 50%, var(--border));
+  border-radius: 4px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+[data-theme="dark"] .scroll-area {
+  scrollbar-color: color-mix(in srgb, var(--muted) 45%, var(--border)) var(--card);
+}
+
+[data-theme="dark"] .scroll-area::-webkit-scrollbar-track {
+  background: var(--card);
+}
+
+.scroll-area-sidebar {
+  background-color: var(--card);
+  scrollbar-color: color-mix(in srgb, var(--muted) 45%, var(--border)) var(--card);
+}
+
+.scroll-area-sidebar::-webkit-scrollbar-track {
+  background: var(--card);
+}
+
+[data-theme="dark"] .scroll-area-sidebar {
+  background-color: color-mix(in srgb, var(--card) 95%, transparent);
+  scrollbar-color: color-mix(in srgb, var(--muted) 40%, var(--border)) color-mix(in srgb, var(--card) 95%, transparent);
+}
+
+[data-theme="dark"] .scroll-area-sidebar::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--card) 95%, transparent);
+}
+
 /* Gradient text utility */
 .gradient-text {
   @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
