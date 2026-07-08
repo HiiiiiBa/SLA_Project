@@ -44,4 +44,7 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: npm run build
+      
+      - name: Build Docker images
+        run: docker compose build
 
