@@ -168,3 +168,58 @@ export async function downloadReport(reportId: number, format: "pdf" | "csv") {
   link.remove();
   window.URL.revokeObjectURL(url);
 }
+
+async function downloadBlobResponse(response: Response, fallbackName: string) {
+  if (!response.ok) {
+    let message = "Échec de l'export PDF";
+    try {
+      const errorBody = (await response.json()) as ApiResponse<unknown>;
+      message = errorBody.message || message;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(message, response.status);
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] ?? fallbackName;
+
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export async function downloadExecutiveReportPdf(report: unknown) {
+  const auth = getStoredAuth();
+  const response = await fetch(`${API_URL}/api/ai/executive-report/export/pdf`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(auth?.accessToken ? { Authorization: `Bearer ${auth.accessToken}` } : {}),
+    },
+    body: JSON.stringify(report),
+  });
+
+  await downloadBlobResponse(response, "ai-executive-report.pdf");
+}
+
+export async function downloadExecutiveReportPdfById(reportId: number) {
+  const auth = getStoredAuth();
+  const response = await fetch(
+    `${API_URL}/api/ai/executive-report/${reportId}/export/pdf`,
+    {
+      headers: auth?.accessToken
+        ? { Authorization: `Bearer ${auth.accessToken}` }
+        : {},
+    },
+  );
+
+  await downloadBlobResponse(response, `ai-executive-report-${reportId}.pdf`);
+}

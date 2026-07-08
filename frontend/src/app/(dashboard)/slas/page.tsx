@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Eye, Gauge, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, FolderKanban, Gauge, Pencil, Plus, Trash2 } from "lucide-react";
 import { SlaApprovalRequestActions } from "@/components/sla/SlaApprovalRequestActions";
 import { SlaFormModal } from "@/components/forms/SlaFormModal";
 import { SlaLifecycleActions } from "@/components/sla/SlaLifecycleActions";
@@ -107,6 +107,7 @@ export default function SlasPage() {
                   <th className="px-6 py-4 font-medium">Temps réponse max</th>
                   <th className="px-6 py-4 font-medium">Taux erreur max</th>
                   <th className="px-6 py-4 font-medium">Client</th>
+                  <th className="px-6 py-4 font-medium">Projet(s)</th>
                   <th className="px-6 py-4 font-medium">Services</th>
                   <th className="min-w-[11rem] whitespace-nowrap px-6 py-4 font-medium">Actions</th>
                 </tr>
@@ -123,6 +124,25 @@ export default function SlasPage() {
                     <td className="px-6 py-4 text-body">{formatPercent(sla.errorRateLimit)}</td>
                     <td className="px-6 py-4 text-body">
                       {sla.clientName ?? `Client #${sla.clientId}`}
+                    </td>
+                    <td className="px-6 py-4 text-body">
+                      {sla.linkedProjects && sla.linkedProjects.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {sla.linkedProjects.map((project) => (
+                            <Link
+                              key={project.id}
+                              href={`/projects/${project.id}`}
+                              className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-card/60 px-2 py-0.5 text-xs font-medium text-heading transition hover:border-primary/40 hover:text-primary"
+                              title={project.name}
+                            >
+                              <FolderKanban className="h-3 w-3 shrink-0 text-muted" />
+                              {project.name}
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted">Non assigné</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-body">{sla.serviceCount ?? 0}</td>
                     <td className="whitespace-nowrap px-6 py-4">

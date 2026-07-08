@@ -1,0 +1,16 @@
+# Rebuild sans accès Docker Hub (réutilise les images locales).
+#
+#   cd frontend && npm run build
+#   cd ../backend && mvn package -DskipTests
+#   cd ..
+#   docker compose -f docker-compose.yml -f docker-compose.from-local.yml up --build -d
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.from-local
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.from-local

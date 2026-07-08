@@ -26,7 +26,7 @@ const navItems = [
   { href: "/projects", label: "Projets", icon: FolderKanban },
   { href: "/teams", label: "Équipes", icon: Users, hideForClient: true, hideForEmployee: true },
   { href: "/alerts", label: "Alertes", icon: AlertTriangle },
-  { href: "/reports", label: "Rapports", icon: FileText, hideForEmployee: true },
+  { href: "/reports", label: "Rapports", icon: FileText },
   { href: "/clients", label: "Clients", icon: Building2, clientsOnly: true },
   { href: "/admin/approvals", label: "Validations", icon: ClipboardCheck, adminOnly: true },
   { href: "/admin", label: "Administration", icon: Settings, adminOnly: true },

@@ -1,9 +1,19 @@
-# Build backend depuis le JAR local (évite Maven dans Docker si le réseau est instable).
+# Build depuis les artefacts locaux (évite Maven / npm dans Docker si le réseau est instable).
+#
+# Backend seul :
 #   cd backend && mvn package -DskipTests
-#   cd .. && docker compose -f docker-compose.yml -f docker-compose.local-build.yml up --build -d
+#   cd .. && docker compose -f docker-compose.yml -f docker-compose.local-build.yml up --build -d backend
+#
+# Backend + frontend :
+#   cd frontend && npm run build && cd ../backend && mvn package -DskipTests && cd ..
+#   docker compose -f docker-compose.yml -f docker-compose.local-build.yml up --build -d
 
 services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile.prebuilt
+  frontend:
+    build:
+      context: ./frontend
       dockerfile: Dockerfile.prebuilt

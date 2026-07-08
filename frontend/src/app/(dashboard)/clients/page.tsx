@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Building2, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { ClientFormModal } from "@/components/forms/ClientFormModal";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
@@ -25,6 +26,18 @@ export default function ClientsPage() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredClients = useMemo(() => {
+    const normalized = searchQuery.trim().toLowerCase();
+    if (!normalized) return clients;
+    return clients.filter(
+      (client) =>
+        client.name.toLowerCase().includes(normalized)
+        || client.email.toLowerCase().includes(normalized)
+        || client.projectName?.toLowerCase().includes(normalized),
+    );
+  }, [clients, searchQuery]);
 
   const loadClients = useCallback(() => {
     if (!sessionUserId) return;
@@ -87,11 +100,40 @@ export default function ClientsPage() {
       <Card>
         <CardHeader
           title="Liste des clients"
-          description={`${clients.length} client(s) enregistré(s)`}
+          description={
+            searchQuery.trim()
+              ? `${filteredClients.length} sur ${clients.length} client(s)`
+              : `${clients.length} client(s) enregistré(s)`
+          }
         />
-        <CardBody className="overflow-x-auto p-0">
+        <CardBody className="space-y-4">
+          {!loading && clients.length > 0 && (
+            <div className="relative max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <Input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Rechercher par nom, email ou projet..."
+                className="pl-9"
+              />
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
           {loading ? (
-            <div className="px-6 py-10 text-sm text-muted">Chargement...</div>
+            <div className="px-2 py-10 text-sm text-muted">Chargement...</div>
+          ) : clients.length === 0 ? (
+            <EmptyState
+              icon={Building2}
+              title="Aucun client enregistré"
+              description="Ajoutez un client pour lui associer des contrats SLA et des rapports."
+            />
+          ) : filteredClients.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title="Aucun résultat"
+              description={`Aucun client ne correspond à « ${searchQuery.trim()} ».`}
+            />
           ) : (
             <table className="min-w-full text-sm">
               <thead className="table-head">
@@ -104,7 +146,7 @@ export default function ClientsPage() {
                 </tr>
               </thead>
               <tbody>
-                {clients.map((client) => (
+                {filteredClients.map((client) => (
                   <tr key={client.id} className="table-row">
                     <td className="px-6 py-4 font-medium text-heading">{client.name}</td>
                     <td className="px-6 py-4 text-body">{client.email}</td>
@@ -140,13 +182,7 @@ export default function ClientsPage() {
               </tbody>
             </table>
           )}
-          {!loading && clients.length === 0 && (
-            <EmptyState
-              icon={Building2}
-              title="Aucun client enregistré"
-              description="Ajoutez un client pour lui associer des contrats SLA et des rapports."
-            />
-          )}
+          </div>
         </CardBody>
       </Card>
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { FolderKanban, Pencil, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Eye, FolderKanban, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { RequestApprovalButton } from "@/components/approval/RequestApprovalButton";
 import { ProjectFormModal } from "@/components/forms/ProjectFormModal";
 import { Header } from "@/components/layout/Header";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
@@ -23,6 +25,21 @@ export default function ProjectsPage() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredProjects = useMemo(() => {
+    const normalized = searchQuery.trim().toLowerCase();
+    if (!normalized) return projects;
+    return projects.filter(
+      (project) =>
+        project.name.toLowerCase().includes(normalized)
+        || project.clientName.toLowerCase().includes(normalized)
+        || project.teamName?.toLowerCase().includes(normalized)
+        || project.managerName?.toLowerCase().includes(normalized)
+        || project.slaName?.toLowerCase().includes(normalized)
+        || project.status.toLowerCase().includes(normalized),
+    );
+  }, [projects, searchQuery]);
 
   const loadProjects = useCallback(() => {
     if (!sessionUserId) return;
@@ -84,15 +101,41 @@ export default function ProjectsPage() {
       )}
 
       <Card>
-        <CardHeader title="Liste des projets" description={`${projects.length} projet(s)`} />
-        <CardBody className="overflow-x-auto p-0">
+        <CardHeader
+          title="Liste des projets"
+          description={
+            searchQuery.trim()
+              ? `${filteredProjects.length} sur ${projects.length} projet(s)`
+              : `${projects.length} projet(s)`
+          }
+        />
+        <CardBody className="space-y-4">
+          {!loading && projects.length > 0 && (
+            <div className="relative max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <Input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Rechercher par nom, client, équipe, manager..."
+                className="pl-9"
+              />
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
           {loading ? (
-            <div className="px-6 py-10 text-sm text-muted">Chargement...</div>
+            <div className="px-2 py-10 text-sm text-muted">Chargement...</div>
           ) : projects.length === 0 ? (
             <EmptyState
               icon={FolderKanban}
               title="Aucun projet"
               description="Associez un projet à un client et à une équipe."
+            />
+          ) : filteredProjects.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title="Aucun résultat"
+              description={`Aucun projet ne correspond à « ${searchQuery.trim()} ».`}
             />
           ) : (
             <table className="min-w-full text-sm">
@@ -108,9 +151,13 @@ export default function ProjectsPage() {
                 </tr>
               </thead>
               <tbody>
-                {projects.map((project) => (
+                {filteredProjects.map((project) => (
                   <tr key={project.id} className="table-row">
-                    <td className="px-6 py-4 font-medium text-heading">{project.name}</td>
+                    <td className="px-6 py-4 font-medium text-heading">
+                      <Link href={`/projects/${project.id}`} className="hover:text-primary">
+                        {project.name}
+                      </Link>
+                    </td>
                     <td className="px-6 py-4 text-body">{project.clientName}</td>
                     <td className="px-6 py-4 text-body">{project.teamName ?? "—"}</td>
                     <td className="px-6 py-4 text-body">{project.managerName ?? "—"}</td>
@@ -119,6 +166,15 @@ export default function ProjectsPage() {
                     {canManageOrg && (
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="inline-flex items-center gap-1.5">
+                          <Link href={`/projects/${project.id}`}>
+                            <Button
+                              variant="secondary"
+                              className="!px-2.5 !py-2"
+                              title="Voir"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Button
                             variant="secondary"
                             className="!px-2.5 !py-2"
@@ -162,6 +218,7 @@ export default function ProjectsPage() {
               </tbody>
             </table>
           )}
+          </div>
         </CardBody>
       </Card>
 

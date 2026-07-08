@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,4 +64,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             WHERE p.sla.id = :slaId
             """)
     List<Project> findBySlaIdWithMembers(@Param("slaId") Long slaId);
+
+    @Query("""
+            SELECT p FROM Project p
+            JOIN FETCH p.sla s
+            WHERE s.id IN :slaIds
+            ORDER BY p.name ASC
+            """)
+    List<Project> findBySlaIdIn(@Param("slaIds") Collection<Long> slaIds);
 }

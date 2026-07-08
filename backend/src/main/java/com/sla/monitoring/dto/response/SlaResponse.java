@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -23,6 +24,7 @@ public class SlaResponse {
     private Long clientId;
     private String clientName;
     private Integer serviceCount;
+    private List<SlaLinkedProjectResponse> linkedProjects;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

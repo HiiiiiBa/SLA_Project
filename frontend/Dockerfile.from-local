@@ -1,0 +1,14 @@
+# Rebuild frontend sans Docker Hub : part de l'image locale déjà présente.
+# Prérequis : sla-monitoring-frontend:latest existe + npm run build sur l'hôte.
+
+FROM sla-monitoring-frontend:latest
+USER root
+WORKDIR /app
+
+COPY public ./public
+COPY .next/standalone ./
+COPY .next/static ./.next/static
+
+USER nextjs
+EXPOSE 3000
+CMD ["node", "server.js"]

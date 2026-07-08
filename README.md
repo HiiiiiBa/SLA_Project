@@ -23,10 +23,17 @@ Système intelligent de gestion des SLA — backend Spring Boot + frontend Next.
 ```bash
 # À la racine du projet
 cp .env.example .env
+
+# Démarrage quotidien (recommandé) — sans rebuild, pas besoin de Docker Hub
+docker compose up -d
+
+# Premier lancement ou après changement de code
 docker compose up --build
 ```
 
-Premier démarrage : le build Maven + Next.js peut prendre **5 à 10 minutes**.
+Sous Windows PowerShell, vous pouvez aussi utiliser `.\scripts\docker-up.ps1` (sans rebuild) ou `.\scripts\docker-up.ps1 -Build`.
+
+Premier démarrage avec `--build` : le build Maven + Next.js peut prendre **5 à 10 minutes**.
 
 Arrêter :
 
@@ -270,9 +277,9 @@ La clé **ne doit jamais** être exposée côté frontend — tous les appels pa
 
 ## Dépannage Docker / réseau
 
-### `auth.docker.io: no such host` ou `repo.maven.apache.org: Try again`
+### `registry-1.docker.io: no such host`, `auth.docker.io: no such host` ou `repo.maven.apache.org: Try again`
 
-Le réseau ou le DNS bloque les téléchargements **depuis l'intérieur des conteneurs** (Docker Hub, Maven Central).
+Le réseau ou le DNS bloque les téléchargements **depuis l'intérieur des conteneurs** (Docker Hub, Maven Central). L'erreur sur `docker/dockerfile:1` en ligne 1 du Dockerfile est le même symptôme.
 
 **Option 1 — Démarrer sans rebuild** (si les images existent déjà) :
 
@@ -280,13 +287,15 @@ Le réseau ou le DNS bloque les téléchargements **depuis l'intérieur des cont
 docker compose up -d
 ```
 
-**Option 2 — Builder le backend sur l'hôte** (recommandé si Maven fonctionne en local) :
+**Option 2 — Builder sur l'hôte** (recommandé si Maven/npm fonctionnent en local) :
 
 ```bash
-cd backend
-mvn package -DskipTests
+cd frontend && npm run build
+cd ../backend && mvn package -DskipTests
 cd ..
 docker compose -f docker-compose.yml -f docker-compose.local-build.yml up --build -d
 ```
+
+Backend seul : omettez `frontend` et `npm run build`, ou ajoutez `backend` à la fin de la commande compose.
 
 **Option 3 — Corriger le réseau Docker Desktop** : Settings → Docker Engine → ajouter `"dns": ["8.8.8.8", "1.1.1.1"]`, redémarrer Docker, puis relancer `docker compose up --build -d`.

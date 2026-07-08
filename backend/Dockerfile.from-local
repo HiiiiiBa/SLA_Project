@@ -1,0 +1,12 @@
+# Rebuild backend sans Docker Hub : part de l'image locale déjà présente.
+# Prérequis : sla-monitoring-backend:latest existe + mvn package -DskipTests sur l'hôte.
+
+FROM sla-monitoring-backend:latest
+USER root
+WORKDIR /app
+COPY target/sla-monitoring-*.jar app.jar
+USER sla
+EXPOSE 8080
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
+ENV SPRING_PROFILES_ACTIVE=prod,docker
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

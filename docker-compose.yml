@@ -29,6 +29,12 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
+    # DNS publics + mapping hôte pour Gemini (Docker Desktop Windows bloque souvent le DNS UDP)
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    extra_hosts:
+      - "generativelanguage.googleapis.com:216.239.32.223"
     depends_on:
       postgres:
         condition: service_healthy

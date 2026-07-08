@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       canModifyIncident: isAdmin || isManager || isEmployee,
       canAssignIncident: isAdmin || isManager,
       canGenerateReports: isAdmin || isManager,
-      canDownloadReports: isAdmin || isManager || isClient,
+      canDownloadReports: isAdmin || isManager || isClient || isEmployee,
     };
   }, [user, loading, login, logout]);
 

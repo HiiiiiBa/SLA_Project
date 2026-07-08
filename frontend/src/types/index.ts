@@ -30,6 +30,11 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface SlaLinkedProject {
+  id: number;
+  name: string;
+}
+
 export interface Sla {
   id: number;
   name: string;
@@ -40,6 +45,7 @@ export interface Sla {
   clientId: number;
   clientName?: string;
   serviceCount?: number;
+  linkedProjects?: SlaLinkedProject[];
   createdAt: string;
   updatedAt: string;
 }
@@ -357,6 +363,67 @@ export interface AiChatRequest {
 
 export interface AiChatResponse {
   reply: string;
+}
+
+export interface ExecutiveReportRequest {
+  projectId: number;
+  periodStart: string;
+  periodEnd: string;
+}
+
+export interface ExecutiveReportKpiSummary {
+  slaScore: number;
+  slaStatus: string;
+  uptimePercentage: number;
+  uptimeTarget: number;
+  averageResponseTime: number;
+  responseTimeLimit?: number | null;
+  responseTimeCompliance: number;
+  averageErrorRate: number;
+  errorRateLimit?: number | null;
+  incidentCount: number;
+  criticalIncidentCount: number;
+  alertCount: number;
+  servicesDown: number;
+  servicesDegraded: number;
+  metricsAnalyzed: number;
+}
+
+export interface ExecutiveReport {
+  id?: number;
+  projectId: number;
+  projectName: string;
+  clientName: string;
+  slaId: number;
+  slaName: string;
+  periodStart: string;
+  periodEnd: string;
+  generatedAt: string;
+  generatedByName?: string | null;
+  kpiSummary: ExecutiveReportKpiSummary;
+  executiveSummary: string;
+  kpiAnalysis: string;
+  incidentAnalysis: string;
+  performanceTrends: string;
+  recommendations: string[];
+  overallConclusion: string;
+}
+
+export interface ExecutiveReportListItem {
+  id: number;
+  projectId: number;
+  projectName: string;
+  clientName: string;
+  slaId: number;
+  slaName: string;
+  periodStart: string;
+  periodEnd: string;
+  generatedAt: string;
+  slaScore?: number | null;
+  slaStatus?: string | null;
+  incidentCount?: number | null;
+  alertCount?: number | null;
+  generatedByName?: string | null;
 }
 
 export interface User {

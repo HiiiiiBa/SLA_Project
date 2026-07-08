@@ -14,6 +14,7 @@ public interface SlaMapper {
     @Mapping(target = "clientId", source = "client.id")
     @Mapping(target = "clientName", source = "client.name")
     @Mapping(target = "serviceCount", ignore = true)
+    @Mapping(target = "linkedProjects", ignore = true)
     SlaResponse toResponse(Sla sla);
 
     @Mapping(target = "id", ignore = true)

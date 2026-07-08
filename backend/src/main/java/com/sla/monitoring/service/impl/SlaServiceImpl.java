@@ -3,8 +3,10 @@ package com.sla.monitoring.service.impl;
 import com.sla.monitoring.dto.request.ServiceDraftRequest;
 import com.sla.monitoring.dto.request.SlaCreateRequest;
 import com.sla.monitoring.dto.request.SlaUpdateRequest;
+import com.sla.monitoring.dto.response.SlaLinkedProjectResponse;
 import com.sla.monitoring.dto.response.SlaResponse;
 import com.sla.monitoring.entity.Client;
+import com.sla.monitoring.entity.Project;
 import com.sla.monitoring.entity.Sla;
 import com.sla.monitoring.entity.enums.ServiceStatus;
 import com.sla.monitoring.entity.enums.SlaStatus;
@@ -12,6 +14,7 @@ import com.sla.monitoring.exception.BusinessException;
 import com.sla.monitoring.exception.ResourceNotFoundException;
 import com.sla.monitoring.mapper.SlaMapper;
 import com.sla.monitoring.repository.ClientRepository;
+import com.sla.monitoring.repository.ProjectRepository;
 import com.sla.monitoring.repository.ServiceRepository;
 import com.sla.monitoring.repository.SlaRepository;
 import com.sla.monitoring.service.ClientScopeService;
@@ -23,7 +26,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +37,7 @@ public class SlaServiceImpl implements SlaService {
 
     private final SlaRepository slaRepository;
     private final ClientRepository clientRepository;
+    private final ProjectRepository projectRepository;
     private final ServiceRepository serviceRepository;
     private final SlaMapper slaMapper;
     private final EmployeeScopeService employeeScopeService;
@@ -162,8 +168,11 @@ public class SlaServiceImpl implements SlaService {
                     : slaRepository.findByClientIdWithClient(clientId);
         }
 
+        Map<Long, List<Project>> projectsBySlaId = loadProjectsBySlaId(
+                slas.stream().map(Sla::getId).collect(Collectors.toSet()));
+
         return slas.stream()
-                .map(this::enrichResponse)
+                .map(sla -> enrichResponse(sla, projectsBySlaId.getOrDefault(sla.getId(), List.of())))
                 .toList();
     }
 
@@ -174,12 +183,30 @@ public class SlaServiceImpl implements SlaService {
         clientScopeService.assertSlaAccess(id);
         Sla sla = slaRepository.findByIdWithClient(id)
                 .orElseThrow(() -> new ResourceNotFoundException("SLA", "id", id));
-        return enrichResponse(sla);
+        return enrichResponse(sla, projectRepository.findBySlaIdWithMembers(id));
+    }
+
+    private Map<Long, List<Project>> loadProjectsBySlaId(Set<Long> slaIds) {
+        if (slaIds.isEmpty()) {
+            return Map.of();
+        }
+        return projectRepository.findBySlaIdIn(slaIds).stream()
+                .collect(Collectors.groupingBy(project -> project.getSla().getId()));
     }
 
     private SlaResponse enrichResponse(Sla sla) {
+        return enrichResponse(sla, projectRepository.findBySlaIdWithMembers(sla.getId()));
+    }
+
+    private SlaResponse enrichResponse(Sla sla, List<Project> linkedProjects) {
         SlaResponse response = slaMapper.toResponse(sla);
         response.setServiceCount(serviceRepository.findBySlaId(sla.getId()).size());
+        response.setLinkedProjects(linkedProjects.stream()
+                .map(project -> SlaLinkedProjectResponse.builder()
+                        .id(project.getId())
+                        .name(project.getName())
+                        .build())
+                .toList());
         return response;
     }
 

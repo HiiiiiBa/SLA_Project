@@ -97,7 +97,7 @@ public class GeminiClient {
                 throw ex;
             } catch (Exception ex) {
                 log.error("Gemini call failed", ex);
-                throw new BusinessException("Impossible de contacter Gemini : " + ex.getMessage());
+                throw new BusinessException(mapConnectivityError(ex));
             }
         }
 
@@ -111,6 +111,42 @@ public class GeminiClient {
             Thread.currentThread().interrupt();
             throw new BusinessException("Appel Gemini interrompu");
         }
+    }
+
+    private String mapConnectivityError(Exception ex) {
+        String details = rootCauseMessage(ex);
+        String lower = details.toLowerCase();
+
+        if (lower.contains("unknown host")
+                || lower.contains("nodename nor servname")
+                || lower.contains("name or service not known")
+                || lower.contains("temporary failure in name resolution")
+                || lower.contains("failed to resolve")) {
+            return """
+                    Impossible de résoudre le DNS Gemini depuis le conteneur backend.
+                    Ajoutez dns: [8.8.8.8, 1.1.1.1] au service backend (déjà dans docker-compose.yml),
+                    puis relancez : docker compose up -d --force-recreate backend
+                    """.trim();
+        }
+
+        if (lower.contains("timed out") || lower.contains("timeout")) {
+            return "Délai d'attente dépassé lors de l'appel à Gemini. Vérifiez votre connexion Internet / proxy.";
+        }
+
+        if (lower.contains("connection refused") || lower.contains("network is unreachable")) {
+            return "Réseau inaccessible vers Gemini. Vérifiez Docker Desktop → Settings → Network / DNS.";
+        }
+
+        return "Impossible de contacter Gemini : " + details;
+    }
+
+    private String rootCauseMessage(Throwable ex) {
+        Throwable current = ex;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        String message = current.getMessage();
+        return message == null || message.isBlank() ? ex.getClass().getSimpleName() : message;
     }
 
     private String mapApiError(RestClientResponseException ex) {

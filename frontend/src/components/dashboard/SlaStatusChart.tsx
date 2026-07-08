@@ -70,14 +70,14 @@ export function SlaStatusChart({ slas }: { slas: Sla[] }) {
 
   if (data.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center text-sm text-muted">
+      <div className="flex h-56 items-center justify-center text-sm text-muted">
         Aucune donnée SLA disponible
       </div>
     );
   }
 
   return (
-    <div className="h-72 w-full">
+    <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} barSize={48}>
           <CartesianGrid

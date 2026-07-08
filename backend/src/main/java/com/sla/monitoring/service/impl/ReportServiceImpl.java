@@ -6,7 +6,6 @@ import com.sla.monitoring.entity.Report;
 import com.sla.monitoring.entity.Sla;
 import com.sla.monitoring.exception.BusinessException;
 import com.sla.monitoring.exception.ResourceNotFoundException;
-import com.sla.monitoring.exception.ForbiddenException;
 import com.sla.monitoring.mapper.ReportMapper;
 import com.sla.monitoring.report.CsvReportGenerator;
 import com.sla.monitoring.report.PdfReportGenerator;
@@ -62,7 +61,13 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public List<ReportResponse> findAll() {
         if (employeeScopeService.isCurrentUserEmployee()) {
-            return List.of();
+            Set<Long> slaIds = employeeScopeService.getScopedSlaIds();
+            if (slaIds.isEmpty()) {
+                return List.of();
+            }
+            return reportRepository.findBySlaIdIn(slaIds).stream()
+                    .map(reportMapper::toResponse)
+                    .toList();
         }
         if (clientScopeService.isCurrentUserClient()) {
             Set<Long> slaIds = clientScopeService.getScopedSlaIds();
@@ -89,10 +94,8 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public ReportResponse findById(Long id) {
-        if (employeeScopeService.isCurrentUserEmployee()) {
-            throw new ForbiddenException("Employees cannot access reports");
-        }
         Report report = findReportEntityById(id);
+        employeeScopeService.assertSlaAccess(report.getSla().getId());
         managerScopeService.assertSlaAccess(report.getSla().getId());
         clientScopeService.assertSlaAccess(report.getSla().getId());
         return reportMapper.toResponse(report);
@@ -123,10 +126,8 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private void assertReportAccess(Long reportId) {
-        if (employeeScopeService.isCurrentUserEmployee()) {
-            throw new ForbiddenException("Employees cannot access reports");
-        }
         Report report = findReportEntityById(reportId);
+        employeeScopeService.assertSlaAccess(report.getSla().getId());
         managerScopeService.assertSlaAccess(report.getSla().getId());
         clientScopeService.assertSlaAccess(report.getSla().getId());
     }

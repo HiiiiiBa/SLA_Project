@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { RequestApprovalButton } from "@/components/approval/RequestApprovalButton";
 import { TeamFormModal } from "@/components/forms/TeamFormModal";
 import { Header } from "@/components/layout/Header";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
@@ -23,6 +24,24 @@ export default function TeamsPage() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredTeams = useMemo(() => {
+    const normalized = searchQuery.trim().toLowerCase();
+    if (!normalized) return teams;
+    return teams.filter(
+      (team) =>
+        team.name.toLowerCase().includes(normalized)
+        || team.managerName.toLowerCase().includes(normalized)
+        || team.description?.toLowerCase().includes(normalized)
+        || team.members.some(
+          (member) =>
+            member.firstName.toLowerCase().includes(normalized)
+            || member.lastName.toLowerCase().includes(normalized)
+            || member.email.toLowerCase().includes(normalized),
+        ),
+    );
+  }, [teams, searchQuery]);
 
   const loadTeams = useCallback(() => {
     if (!sessionUserId) return;
@@ -82,15 +101,41 @@ export default function TeamsPage() {
       )}
 
       <Card>
-        <CardHeader title="Liste des équipes" description={`${teams.length} équipe(s)`} />
-        <CardBody className="overflow-x-auto p-0">
+        <CardHeader
+          title="Liste des équipes"
+          description={
+            searchQuery.trim()
+              ? `${filteredTeams.length} sur ${teams.length} équipe(s)`
+              : `${teams.length} équipe(s)`
+          }
+        />
+        <CardBody className="space-y-4">
+          {!loading && teams.length > 0 && (
+            <div className="relative max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <Input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Rechercher par nom, manager ou membre..."
+                className="pl-9"
+              />
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
           {loading ? (
-            <div className="px-6 py-10 text-sm text-muted">Chargement...</div>
+            <div className="px-2 py-10 text-sm text-muted">Chargement...</div>
           ) : teams.length === 0 ? (
             <EmptyState
               icon={Users}
               title="Aucune équipe"
               description="Créez une équipe avec un manager et des employés."
+            />
+          ) : filteredTeams.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title="Aucun résultat"
+              description={`Aucune équipe ne correspond à « ${searchQuery.trim()} ».`}
             />
           ) : (
             <table className="min-w-full text-sm">
@@ -104,7 +149,7 @@ export default function TeamsPage() {
                 </tr>
               </thead>
               <tbody>
-                {teams.map((team) => (
+                {filteredTeams.map((team) => (
                   <tr key={team.id} className="table-row">
                     <td className="px-6 py-4 font-medium text-heading">{team.name}</td>
                     <td className="px-6 py-4 text-body">{team.managerName}</td>
@@ -156,6 +201,7 @@ export default function TeamsPage() {
               </tbody>
             </table>
           )}
+          </div>
         </CardBody>
       </Card>
 
