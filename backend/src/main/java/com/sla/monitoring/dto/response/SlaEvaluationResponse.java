@@ -30,6 +30,7 @@ public class SlaEvaluationResponse {
     private LocalDateTime periodEnd;
     private int metricsAnalyzed;
     private int incidentsAnalyzed;
+    private long maintenanceMinutesExcluded;
     private boolean statusChanged;
     private boolean alertCreated;
     private boolean reportCreated;

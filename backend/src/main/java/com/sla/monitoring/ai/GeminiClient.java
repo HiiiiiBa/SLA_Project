@@ -41,7 +41,7 @@ public class GeminiClient {
         }
         if (properties.getApiKey() == null || properties.getApiKey().isBlank()) {
             throw new BusinessException(
-                    "Clé API Gemini non configurée. Définissez la variable d'environnement GEMINI_API_KEY.");
+                    "Assistant IA non configuré. Contactez l'administrateur.");
         }
     }
 
@@ -79,7 +79,7 @@ public class GeminiClient {
                 JsonNode textNode = root.path("candidates").path(0).path("content").path("parts").path(0).path("text");
                 if (textNode.isMissingNode() || textNode.asText().isBlank()) {
                     String reason = root.path("promptFeedback").path("blockReason").asText("unknown");
-                    throw new BusinessException("Réponse Gemini vide ou bloquée : " + reason);
+                    throw new BusinessException("Réponse de l'assistant IA vide ou bloquée");
                 }
                 return textNode.asText().trim();
             } catch (RestClientResponseException ex) {
@@ -109,7 +109,7 @@ public class GeminiClient {
             Thread.sleep(RETRY_BASE_DELAY_MS * attempt);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new BusinessException("Appel Gemini interrompu");
+            throw new BusinessException("Appel à l'assistant IA interrompu");
         }
     }
 
@@ -122,22 +122,18 @@ public class GeminiClient {
                 || lower.contains("name or service not known")
                 || lower.contains("temporary failure in name resolution")
                 || lower.contains("failed to resolve")) {
-            return """
-                    Impossible de résoudre le DNS Gemini depuis le conteneur backend.
-                    Ajoutez dns: [8.8.8.8, 1.1.1.1] au service backend (déjà dans docker-compose.yml),
-                    puis relancez : docker compose up -d --force-recreate backend
-                    """.trim();
+            return "Impossible de joindre l'assistant IA (problème réseau/DNS). Contactez l'administrateur.";
         }
 
         if (lower.contains("timed out") || lower.contains("timeout")) {
-            return "Délai d'attente dépassé lors de l'appel à Gemini. Vérifiez votre connexion Internet / proxy.";
+            return "Délai d'attente dépassé pour l'assistant IA. Réessayez plus tard.";
         }
 
         if (lower.contains("connection refused") || lower.contains("network is unreachable")) {
-            return "Réseau inaccessible vers Gemini. Vérifiez Docker Desktop → Settings → Network / DNS.";
+            return "Réseau inaccessible pour l'assistant IA. Contactez l'administrateur.";
         }
 
-        return "Impossible de contacter Gemini : " + details;
+        return "Impossible de contacter l'assistant IA.";
     }
 
     private String rootCauseMessage(Throwable ex) {
@@ -151,46 +147,21 @@ public class GeminiClient {
 
     private String mapApiError(RestClientResponseException ex) {
         if (ex == null) {
-            return "Erreur lors de l'appel à Gemini";
+            return "Erreur lors de l'appel à l'assistant IA";
         }
 
         int status = ex.getStatusCode().value();
-        String details = extractErrorMessage(ex.getResponseBodyAsString());
 
         if (status == 429) {
-            return """
-                    Quota Gemini dépassé ou indisponible (429).
-                    Vérifiez que GEMINI_MODEL=gemini-2.5-flash (gemini-2.0-flash est déprécié).
-                    Attendez quelques minutes ou consultez https://aistudio.google.com/apikey
-                    """.trim() + (details.isBlank() ? "" : " — " + details);
+            return "Quota de l'assistant IA temporairement dépassé. Réessayez dans quelques minutes.";
         }
         if (status == 401 || status == 403) {
-            return "Clé API Gemini invalide ou non autorisée. Régénérez une clé sur https://aistudio.google.com/apikey"
-                    + (details.isBlank() ? "" : " — " + details);
+            return "Assistant IA non autorisé. Contactez l'administrateur.";
         }
         if (status == 404) {
-            return "Modèle Gemini introuvable : " + properties.getModel()
-                    + ". Essayez GEMINI_MODEL=gemini-2.5-flash";
+            return "Service d'assistant IA indisponible. Contactez l'administrateur.";
         }
 
-        return "Erreur lors de l'appel à Gemini : " + status
-                + (details.isBlank() ? "" : " — " + details);
-    }
-
-    private String extractErrorMessage(String responseBody) {
-        if (responseBody == null || responseBody.isBlank()) {
-            return "";
-        }
-        try {
-            JsonNode error = objectMapper.readTree(responseBody).path("error");
-            String message = error.path("message").asText("");
-            String status = error.path("status").asText("");
-            if (!message.isBlank() && !status.isBlank()) {
-                return status + ": " + message;
-            }
-            return message.isBlank() ? status : message;
-        } catch (Exception ignored) {
-            return "";
-        }
+        return "Erreur lors de l'appel à l'assistant IA.";
     }
 }

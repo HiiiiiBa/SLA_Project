@@ -427,7 +427,7 @@ public class ExecutiveReportAiServiceImpl implements ExecutiveReportAiService {
             }
 
             if (executiveSummary.isBlank() || overallConclusion.isBlank() || recommendations.isEmpty()) {
-                throw new BusinessException("Rapport Gemini incomplet : sections obligatoires manquantes");
+                throw new BusinessException("Rapport exécutif incomplet : sections obligatoires manquantes");
             }
 
             return new AiNarrative(
@@ -440,7 +440,7 @@ public class ExecutiveReportAiServiceImpl implements ExecutiveReportAiService {
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new BusinessException("Impossible d'interpréter le rapport Gemini : " + ex.getMessage());
+            throw new BusinessException("Impossible d'interpréter le rapport exécutif : " + ex.getMessage());
         }
     }
 

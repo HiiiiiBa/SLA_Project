@@ -6,6 +6,7 @@ import {
   Activity,
   AlertTriangle,
   Building2,
+  CalendarClock,
   ClipboardCheck,
   FileText,
   FolderKanban,
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/slas", label: "SLA", icon: Gauge },
+  { href: "/maintenance", label: "Maintenances", icon: CalendarClock },
   { href: "/incidents", label: "Incidents", icon: Siren },
   { href: "/projects", label: "Projets", icon: FolderKanban },
   { href: "/teams", label: "Équipes", icon: Users, hideForClient: true, hideForEmployee: true },
@@ -44,7 +46,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <div>
           <p className="font-bold text-foreground">SLA Monitor</p>
-          <p className="text-xs text-muted">Gestion intelligente</p>
+          <p className="text-xs text-muted">Supervision SLA</p>
         </div>
       </div>
 

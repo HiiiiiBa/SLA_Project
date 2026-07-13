@@ -62,7 +62,7 @@ export function ExecutiveReportView({
         <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
           <Bot className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div>
-            <p className="text-sm font-semibold text-heading">Généré par Gemini</p>
+            <p className="text-sm font-semibold text-heading">Rapport exécutif IA</p>
             <p className="text-xs text-muted">
               SLA {report.slaName} · {formatDate(report.generatedAt)}
               {report.generatedByName ? ` · ${report.generatedByName}` : ""}

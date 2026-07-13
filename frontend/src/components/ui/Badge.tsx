@@ -1,5 +1,12 @@
 import { cn } from "@/lib/utils";
-import type { AlertStatus, IncidentSeverity, IncidentStatus, ServiceStatus, SlaStatus } from "@/types";
+import type {
+  AlertStatus,
+  IncidentSeverity,
+  IncidentStatus,
+  MaintenanceWindowStatus,
+  ServiceStatus,
+  SlaStatus,
+} from "@/types";
 
 const badgeBase =
   "inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide";
@@ -89,6 +96,28 @@ export function SeverityBadge({ severity }: { severity: IncidentSeverity }) {
   return (
     <span className={cn(badgeBase, severityStyles[severity])}>
       {severity}
+    </span>
+  );
+}
+
+const maintenanceStyles: Record<MaintenanceWindowStatus, string> = {
+  SCHEDULED: "bg-primary/15 text-primary border border-primary/30 shadow-sm",
+  ACTIVE: "bg-warning/15 text-warning border border-warning/30 shadow-sm",
+  COMPLETED: "bg-success/15 text-success border border-success/30 shadow-sm",
+  CANCELLED: "bg-muted/20 text-muted border border-muted/40 shadow-sm",
+};
+
+const maintenanceLabels: Record<MaintenanceWindowStatus, string> = {
+  SCHEDULED: "Planifiée",
+  ACTIVE: "En cours",
+  COMPLETED: "Terminée",
+  CANCELLED: "Annulée",
+};
+
+export function MaintenanceStatusBadge({ status }: { status: MaintenanceWindowStatus }) {
+  return (
+    <span className={cn(badgeBase, maintenanceStyles[status])}>
+      {maintenanceLabels[status]}
     </span>
   );
 }

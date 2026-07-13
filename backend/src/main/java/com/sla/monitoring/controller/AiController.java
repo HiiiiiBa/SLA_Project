@@ -37,7 +37,7 @@ import java.util.List;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
-@Tag(name = "AI", description = "Gemini-powered incident analysis, chatbot and executive reports")
+@Tag(name = "AI", description = "Incident analysis, chatbot and executive reports")
 public class AiController {
 
     private final IncidentAiService incidentAiService;
@@ -45,7 +45,7 @@ public class AiController {
     private final ExecutiveReportAiService executiveReportAiService;
 
     @PostMapping("/incidents/{id}/analyze")
-    @Operation(summary = "Analyze an incident with Gemini AI")
+    @Operation(summary = "Analyze an incident with AI")
     public ResponseEntity<ApiResponse<IncidentAnalysisResponse>> analyzeIncident(@PathVariable Long id) {
         IncidentAnalysisResponse response = incidentAiService.analyzeIncident(id);
         return ResponseEntity.ok(ApiResponse.success("Analyse générée avec succès", response));

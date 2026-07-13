@@ -29,7 +29,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    # DNS publics + mapping hôte pour Gemini (Docker Desktop Windows bloque souvent le DNS UDP)
+    # DNS publics (accès API assistant IA depuis le conteneur)
     dns:
       - 8.8.8.8
       - 1.1.1.1

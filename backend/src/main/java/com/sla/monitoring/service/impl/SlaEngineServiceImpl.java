@@ -6,6 +6,7 @@ import com.sla.monitoring.engine.SlaCalculator;
 import com.sla.monitoring.engine.model.SlaEvaluationResult;
 import com.sla.monitoring.alert.AutomaticAlertService;
 import com.sla.monitoring.entity.Incident;
+import com.sla.monitoring.entity.MaintenanceWindow;
 import com.sla.monitoring.entity.MonitoringMetric;
 import com.sla.monitoring.entity.Report;
 import com.sla.monitoring.entity.Sla;
@@ -13,6 +14,7 @@ import com.sla.monitoring.entity.enums.ReportFormat;
 import com.sla.monitoring.entity.enums.SlaStatus;
 import com.sla.monitoring.exception.ResourceNotFoundException;
 import com.sla.monitoring.repository.IncidentRepository;
+import com.sla.monitoring.repository.MaintenanceWindowRepository;
 import com.sla.monitoring.repository.MonitoringMetricRepository;
 import com.sla.monitoring.repository.ReportRepository;
 import com.sla.monitoring.repository.SlaRepository;
@@ -37,6 +39,7 @@ public class SlaEngineServiceImpl implements SlaEngineService {
     private final SlaRepository slaRepository;
     private final MonitoringMetricRepository monitoringMetricRepository;
     private final IncidentRepository incidentRepository;
+    private final MaintenanceWindowRepository maintenanceWindowRepository;
     private final ReportRepository reportRepository;
     private final AutomaticAlertService automaticAlertService;
     private final SlaCalculator slaCalculator;
@@ -75,8 +78,15 @@ public class SlaEngineServiceImpl implements SlaEngineService {
         List<Incident> incidents = incidentRepository.findBySlaId(sla.getId()).stream()
                 .filter(incident -> overlapsPeriod(incident, periodStart, periodEnd))
                 .toList();
+        List<MaintenanceWindow> maintenanceWindows = maintenanceWindowRepository
+                .findOverlappingForSla(
+                        sla.getId(),
+                        periodStart,
+                        periodEnd,
+                        com.sla.monitoring.entity.enums.MaintenanceWindowStatus.CANCELLED);
 
-        SlaEvaluationResult result = slaCalculator.evaluate(sla, metrics, incidents, periodStart, periodEnd);
+        SlaEvaluationResult result = slaCalculator.evaluate(
+                sla, metrics, incidents, maintenanceWindows, periodStart, periodEnd);
 
         if (sla.getStatus() != result.getCurrentStatus()) {
             sla.setStatus(result.getCurrentStatus());
@@ -109,6 +119,7 @@ public class SlaEngineServiceImpl implements SlaEngineService {
                 .periodEnd(result.getPeriodEnd())
                 .metricsAnalyzed(result.getMetricsAnalyzed())
                 .incidentsAnalyzed(result.getIncidentsAnalyzed())
+                .maintenanceMinutesExcluded(result.getMaintenanceMinutesExcluded())
                 .statusChanged(result.isStatusChanged())
                 .alertCreated(alertCreated)
                 .reportCreated(reportCreated)
@@ -158,6 +169,7 @@ public class SlaEngineServiceImpl implements SlaEngineService {
                 .periodEnd(result.getPeriodEnd())
                 .metricsAnalyzed(result.getMetricsAnalyzed())
                 .incidentsAnalyzed(result.getIncidentsAnalyzed())
+                .maintenanceMinutesExcluded(result.getMaintenanceMinutesExcluded())
                 .statusChanged(result.isStatusChanged())
                 .alertCreated(result.isAlertCreated())
                 .reportCreated(result.isReportCreated())

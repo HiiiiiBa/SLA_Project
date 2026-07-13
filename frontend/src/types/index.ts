@@ -9,6 +9,7 @@ export type IncidentStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED";
 export type MetricStatus = "UP" | "DOWN";
 export type ServiceStatus = "UP" | "DOWN";
 export type SimulationScenario = "NORMAL" | "DEGRADED" | "OUTAGE";
+export type MaintenanceWindowStatus = "SCHEDULED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -508,9 +509,42 @@ export interface SlaEvaluation {
   periodEnd: string;
   metricsAnalyzed: number;
   incidentsAnalyzed: number;
+  maintenanceMinutesExcluded?: number;
   statusChanged: boolean;
   alertCreated: boolean;
   reportCreated: boolean;
+}
+
+export interface MaintenanceWindow {
+  id: number;
+  title: string;
+  reason?: string;
+  slaId: number;
+  slaName?: string;
+  serviceId?: number;
+  serviceName?: string;
+  startTime: string;
+  endTime: string;
+  status: MaintenanceWindowStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MaintenanceWindowCreateRequest {
+  title: string;
+  reason?: string;
+  slaId: number;
+  serviceId?: number;
+  startTime: string;
+  endTime: string;
+}
+
+export interface MaintenanceWindowUpdateRequest {
+  title: string;
+  reason?: string;
+  serviceId?: number;
+  startTime: string;
+  endTime: string;
 }
 
 export interface MetricSimulationResult {

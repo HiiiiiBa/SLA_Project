@@ -26,6 +26,7 @@ public class SlaEvaluationResult {
     LocalDateTime periodEnd;
     int metricsAnalyzed;
     int incidentsAnalyzed;
+    long maintenanceMinutesExcluded;
     boolean statusChanged;
     boolean alertCreated;
     boolean reportCreated;

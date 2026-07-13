@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Cpu, KeyRound, Pencil, Plus, Power, PowerOff, Trash2, Zap } from "lucide-react";
+import { Cpu, Pencil, Plus, Trash2, Zap } from "lucide-react";
 import { UserFormModal } from "@/components/forms/UserFormModal";
-import { ResetPasswordModal } from "@/components/forms/ResetPasswordModal";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -40,8 +39,6 @@ export default function AdminPage() {
   const [lastSimulation, setLastSimulation] = useState<MetricSimulationResult | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [resetModalOpen, setResetModalOpen] = useState(false);
-  const [resetUser, setResetUser] = useState<User | null>(null);
 
   const loadUsers = useCallback(() => {
     setLoading(true);
@@ -129,18 +126,6 @@ export default function AdminPage() {
     }
   }
 
-  async function toggleUserStatus(user: User) {
-    const action = user.enabled ? "deactivate" : "activate";
-    const label = user.enabled ? "désactiver" : "activer";
-    if (!confirm(`${label.charAt(0).toUpperCase() + label.slice(1)} le compte ${user.email} ?`)) return;
-    try {
-      await apiFetch<User>(`/api/admin/users/${user.id}/${action}`, { method: "PATCH" });
-      loadUsers();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Action impossible");
-    }
-  }
-
   if (!isAdmin) return null;
 
   return (
@@ -155,8 +140,8 @@ export default function AdminPage() {
       <div className="mb-8 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader
-            title="Moteur SLA (SLA Engine)"
-            description="Calcul manuel, automatique (scheduler) et recalcul par contrat."
+            title="Moteur SLA"
+            description="Recalcul manuel des indicateurs de conformité (également exécuté automatiquement)."
           />
           <CardBody className="space-y-4">
             <Button onClick={runSlaEvaluation} loading={engineLoading}>
@@ -235,7 +220,7 @@ export default function AdminPage() {
         <Card>
           <CardHeader
             title="Simulation métriques"
-            description="Génère des points UP/DOWN pour alimenter les graphiques."
+            description="Génère des points UP/DOWN pour alimenter les graphiques et le moteur SLA."
           />
           <CardBody className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -262,9 +247,6 @@ export default function AdminPage() {
                 </p>
               </div>
             )}
-            <p className="text-xs text-muted">
-              Astuce : Simuler → Évaluer SLA → consulter le dashboard et les rapports.
-            </p>
           </CardBody>
         </Card>
       </div>
@@ -272,7 +254,7 @@ export default function AdminPage() {
       <Card>
         <CardHeader
           title="Gestion des utilisateurs"
-          description={`${users.length} compte(s) — activer, désactiver ou réinitialiser le mot de passe`}
+          description={`${users.length} compte(s) enregistré(s)`}
           action={
             <Button
               onClick={() => {
@@ -316,7 +298,7 @@ export default function AdminPage() {
                             : "font-medium text-muted"
                         }
                       >
-                        {user.enabled ? "Actif" : "Désactivé"}
+                        {user.enabled ? "Actif" : "Inactif"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-muted">{formatDate(user.createdAt)}</td>
@@ -324,35 +306,19 @@ export default function AdminPage() {
                       <div className="flex flex-wrap gap-2">
                         <Button
                           variant="secondary"
-                          onClick={() => toggleUserStatus(user)}
-                          title={user.enabled ? "Désactiver" : "Activer"}
-                        >
-                          {user.enabled ? (
-                            <PowerOff className="h-4 w-4" />
-                          ) : (
-                            <Power className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          onClick={() => {
-                            setResetUser(user);
-                            setResetModalOpen(true);
-                          }}
-                          title="Réinitialiser le mot de passe"
-                        >
-                          <KeyRound className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="secondary"
                           onClick={() => {
                             setSelectedUser(user);
                             setModalOpen(true);
                           }}
+                          title="Modifier"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="danger" onClick={() => handleDelete(user)}>
+                        <Button
+                          variant="danger"
+                          onClick={() => handleDelete(user)}
+                          title="Supprimer"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -370,13 +336,6 @@ export default function AdminPage() {
         onClose={() => setModalOpen(false)}
         onSaved={loadUsers}
         user={selectedUser}
-      />
-
-      <ResetPasswordModal
-        open={resetModalOpen}
-        onClose={() => setResetModalOpen(false)}
-        onSaved={loadUsers}
-        user={resetUser}
       />
     </>
   );

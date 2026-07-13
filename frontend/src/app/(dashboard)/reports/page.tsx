@@ -225,7 +225,7 @@ export default function ReportsPage() {
           canDownloadReports ? (
             <Button onClick={() => setAiModalOpen(true)}>
               <Sparkles className="h-4 w-4" />
-              Generate AI Report
+              Générer un rapport exécutif
             </Button>
           ) : undefined
         }
@@ -246,8 +246,8 @@ export default function ReportsPage() {
 
       <Card className="mb-6">
         <CardHeader
-          title="Historique des rapports AI"
-          description={`${aiHistory.length} rapport(s) Gemini sauvegardé(s)`}
+          title="Historique des rapports exécutifs"
+          description={`${aiHistory.length} rapport(s) exécutif(s) sauvegardé(s)`}
         />
         <CardBody className="overflow-x-auto p-0">
           {loadingHistory ? (
@@ -255,8 +255,8 @@ export default function ReportsPage() {
           ) : aiHistory.length === 0 ? (
             <EmptyState
               icon={Sparkles}
-              title="Aucun rapport AI"
-              description="Générez un rapport via « Generate AI Report » pour le retrouver ici."
+              title="Aucun rapport exécutif"
+              description="Générez un rapport exécutif pour le retrouver ici."
             />
           ) : (
             <table className="min-w-full text-sm">

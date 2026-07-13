@@ -25,7 +25,7 @@ export function IncidentAnalysisCard({ analysis, className }: IncidentAnalysisCa
     <Card className={cn("border-primary/20 bg-gradient-to-br from-primary/5 via-card to-accent/5", className)}>
       <CardHeader
         title="Analyse IA"
-        description="Générée par Google Gemini à partir des données de l'incident"
+        description="Analyse générée à partir des données de l'incident"
       />
       <CardBody className="space-y-5">
         <div className="flex flex-wrap items-center gap-3">

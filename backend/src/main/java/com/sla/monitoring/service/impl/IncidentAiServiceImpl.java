@@ -55,7 +55,7 @@ public class IncidentAiServiceImpl implements IncidentAiService {
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new BusinessException("Impossible d'interpréter l'analyse Gemini : " + ex.getMessage());
+            throw new BusinessException("Impossible d'interpréter l'analyse : " + ex.getMessage());
         }
     }
 
@@ -94,10 +94,10 @@ public class IncidentAiServiceImpl implements IncidentAiService {
 
     private void validateAnalysis(IncidentAnalysisResponse analysis) {
         if (analysis.getSummary() == null || analysis.getSummary().isBlank()) {
-            throw new BusinessException("Analyse Gemini incomplète : résumé manquant");
+            throw new BusinessException("Analyse incomplète : résumé manquant");
         }
         if (analysis.getRecommendedSteps() == null || analysis.getRecommendedSteps().isEmpty()) {
-            throw new BusinessException("Analyse Gemini incomplète : étapes de résolution manquantes");
+            throw new BusinessException("Analyse incomplète : étapes de résolution manquantes");
         }
     }
 }

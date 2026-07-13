@@ -107,8 +107,8 @@ export function ExecutiveReportModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Generate AI Report"
-      description="Sélectionnez un projet et une période. Gemini produira un executive report structuré."
+      title="Rapport exécutif"
+      description="Sélectionnez un projet et une période pour générer un rapport exécutif structuré."
       size="large"
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
@@ -171,7 +171,7 @@ export function ExecutiveReportModal({
           </Button>
           <Button type="submit" loading={loading}>
             <Sparkles className="h-4 w-4" />
-            Générer avec Gemini
+            Générer le rapport
           </Button>
         </div>
       </form>

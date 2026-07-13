@@ -73,7 +73,7 @@ export function FloatingChatbot() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-heading">Assistant SLA</p>
-                <p className="text-xs text-muted">Propulsé par Gemini</p>
+                <p className="text-xs text-muted">Assistant intelligent</p>
               </div>
             </div>
             <button

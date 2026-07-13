@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Gauge, Pencil, Plus, Server, Siren, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarClock, Gauge, Pencil, Plus, Server, Siren, Trash2 } from "lucide-react";
 import { IncidentFormModal } from "@/components/forms/IncidentFormModal";
 import { ServiceFormModal } from "@/components/forms/ServiceFormModal";
 import { SlaApprovalRequestActions } from "@/components/sla/SlaApprovalRequestActions";
@@ -11,7 +11,7 @@ import { SlaLifecycleActions } from "@/components/sla/SlaLifecycleActions";
 import { Header } from "@/components/layout/Header";
 import { SlaMetricsCharts } from "@/components/sla/SlaMetricsCharts";
 import { Button } from "@/components/ui/Button";
-import { SeverityBadge, IncidentStatusBadge, ServiceStatusBadge, StatusBadge } from "@/components/ui/Badge";
+import { SeverityBadge, IncidentStatusBadge, MaintenanceStatusBadge, ServiceStatusBadge, StatusBadge } from "@/components/ui/Badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -19,7 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
 import { formatDate, formatPercent } from "@/lib/utils";
-import type { Incident, MonitoringMetric, ServiceEntity, Sla } from "@/types";
+import type { Incident, MaintenanceWindow, MonitoringMetric, ServiceEntity, Sla } from "@/types";
 
 export default function SlaDetailPage() {
   const params = useParams();
@@ -30,6 +30,7 @@ export default function SlaDetailPage() {
   const [metrics, setMetrics] = useState<MonitoringMetric[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [services, setServices] = useState<ServiceEntity[]>([]);
+  const [maintenances, setMaintenances] = useState<MaintenanceWindow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [incidentModalOpen, setIncidentModalOpen] = useState(false);
@@ -61,16 +62,23 @@ export default function SlaDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const [slaData, metricsData, incidentsData, servicesData] = await Promise.all([
+      const [slaData, metricsData, incidentsData, servicesData, maintenanceData] = await Promise.all([
         apiFetch<Sla>(`/api/slas/${slaId}`),
         apiFetch<MonitoringMetric[]>(`/api/metrics?slaId=${slaId}`),
         apiFetch<Incident[]>(`/api/incidents?slaId=${slaId}`),
         apiFetch<ServiceEntity[]>(`/api/services?slaId=${slaId}`),
+        apiFetch<MaintenanceWindow[]>(`/api/maintenance-windows?slaId=${slaId}`),
       ]);
       setSla(slaData);
       setMetrics(metricsData);
       setIncidents(incidentsData);
       setServices(servicesData);
+      setMaintenances(
+        maintenanceData
+          .filter((item) => item.status === "SCHEDULED" || item.status === "ACTIVE")
+          .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+          .slice(0, 5),
+      );
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Erreur de chargement");
     } finally {
@@ -235,6 +243,53 @@ export default function SlaDetailPage() {
                     ? "Ajoutez des services techniques pour alimenter les métriques et graphiques."
                     : "Aucun service n'est actuellement monitoré pour ce SLA."
               }
+            />
+          )}
+        </CardBody>
+      </Card>
+
+      <Card className="mb-6">
+        <CardHeader
+          title="Prochaines maintenances"
+          description="Fenêtres exclues du calcul SLA"
+          action={
+            <Link
+              href="/maintenance"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Voir tout
+            </Link>
+          }
+        />
+        <CardBody className="overflow-x-auto p-0">
+          {maintenances.length > 0 ? (
+            <table className="min-w-full text-sm">
+              <thead className="table-head">
+                <tr>
+                  <th className="px-6 py-4 font-medium">Titre</th>
+                  <th className="px-6 py-4 font-medium">Début</th>
+                  <th className="px-6 py-4 font-medium">Fin</th>
+                  <th className="px-6 py-4 font-medium">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {maintenances.map((window) => (
+                  <tr key={window.id} className="table-row">
+                    <td className="px-6 py-4 font-medium text-heading">{window.title}</td>
+                    <td className="px-6 py-4 text-body">{formatDate(window.startTime)}</td>
+                    <td className="px-6 py-4 text-body">{formatDate(window.endTime)}</td>
+                    <td className="px-6 py-4">
+                      <MaintenanceStatusBadge status={window.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <EmptyState
+              icon={CalendarClock}
+              title="Aucune maintenance à venir"
+              description="Les coupures planifiées apparaîtront ici et ne pénaliseront pas le SLA."
             />
           )}
         </CardBody>

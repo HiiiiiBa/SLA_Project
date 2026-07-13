@@ -1,6 +1,7 @@
 package com.sla.monitoring.engine;
 
 import com.sla.monitoring.entity.Incident;
+import com.sla.monitoring.entity.MaintenanceWindow;
 import com.sla.monitoring.entity.MonitoringMetric;
 import com.sla.monitoring.entity.Sla;
 import com.sla.monitoring.entity.enums.MetricStatus;
@@ -26,25 +27,48 @@ public class SlaCalculator {
     private static final double WARNING_UPTIME_MARGIN = 0.50;
 
     /**
-     * Evaluates SLA compliance over the given period.
+     * Evaluates SLA compliance over the given period (no maintenance windows).
      */
     public SlaEvaluationResult evaluate(Sla sla,
                                         List<MonitoringMetric> metrics,
                                         List<Incident> incidents,
                                         LocalDateTime periodStart,
                                         LocalDateTime periodEnd) {
-        double uptimePercentage = calculateUptimePercentage(metrics, incidents, periodStart, periodEnd);
-        double averageResponseTime = calculateAverageResponseTime(metrics);
-        double averageErrorRate = calculateAverageErrorRate(metrics);
-        double responseTimeCompliance = calculateResponseTimeCompliance(metrics, sla.getResponseTimeLimit());
-        double slaScore = calculateSlaScore(sla, uptimePercentage, averageResponseTime, averageErrorRate, metrics);
+        return evaluate(sla, metrics, incidents, List.of(), periodStart, periodEnd);
+    }
+
+    /**
+     * Evaluates SLA compliance over the given period, excluding maintenance windows.
+     */
+    public SlaEvaluationResult evaluate(Sla sla,
+                                        List<MonitoringMetric> metrics,
+                                        List<Incident> incidents,
+                                        List<MaintenanceWindow> maintenanceWindows,
+                                        LocalDateTime periodStart,
+                                        LocalDateTime periodEnd) {
+        List<MaintenanceWindow> windows = maintenanceWindows == null ? List.of() : maintenanceWindows;
+
+        long periodMinutes = Math.max(1, Duration.between(periodStart, periodEnd).toMinutes());
+        long maintenanceMinutes = calculateMaintenanceMinutes(windows, periodStart, periodEnd);
+        long effectivePeriodMinutes = Math.max(1, periodMinutes - maintenanceMinutes);
+
+        List<MonitoringMetric> effectiveMetrics = metrics.stream()
+                .filter(metric -> !isInsideMaintenance(metric.getTimestamp(), windows))
+                .toList();
+
+        double uptimePercentage = calculateUptimePercentage(
+                effectiveMetrics, incidents, windows, periodStart, periodEnd, effectivePeriodMinutes);
+        double averageResponseTime = calculateAverageResponseTime(effectiveMetrics);
+        double averageErrorRate = calculateAverageErrorRate(effectiveMetrics);
+        double responseTimeCompliance = calculateResponseTimeCompliance(effectiveMetrics, sla.getResponseTimeLimit());
+        double slaScore = calculateSlaScore(sla, uptimePercentage, averageResponseTime, averageErrorRate, effectiveMetrics);
 
         SlaStatus currentStatus = determineStatus(
                 sla,
                 uptimePercentage,
                 averageResponseTime,
                 averageErrorRate,
-                metrics
+                effectiveMetrics
         );
 
         return SlaEvaluationResult.builder()
@@ -59,8 +83,9 @@ public class SlaCalculator {
                 .slaScore(round(slaScore))
                 .periodStart(periodStart)
                 .periodEnd(periodEnd)
-                .metricsAnalyzed(metrics.size())
+                .metricsAnalyzed(effectiveMetrics.size())
                 .incidentsAnalyzed(incidents.size())
+                .maintenanceMinutesExcluded(maintenanceMinutes)
                 .statusChanged(sla.getStatus() != currentStatus)
                 .alertCreated(false)
                 .reportCreated(false)
@@ -69,11 +94,15 @@ public class SlaCalculator {
 
     private double calculateUptimePercentage(List<MonitoringMetric> metrics,
                                              List<Incident> incidents,
+                                             List<MaintenanceWindow> windows,
                                              LocalDateTime periodStart,
-                                             LocalDateTime periodEnd) {
-        long periodMinutes = Math.max(1, Duration.between(periodStart, periodEnd).toMinutes());
-        double incidentDowntimeMinutes = calculateIncidentDowntimeMinutes(incidents, periodStart, periodEnd);
-        double incidentBasedUptime = Math.max(0.0, 100.0 - (incidentDowntimeMinutes / periodMinutes * 100.0));
+                                             LocalDateTime periodEnd,
+                                             long effectivePeriodMinutes) {
+        double incidentDowntimeMinutes = calculateIncidentDowntimeMinutes(
+                incidents, windows, periodStart, periodEnd);
+        double incidentBasedUptime = Math.max(
+                0.0,
+                100.0 - (incidentDowntimeMinutes / effectivePeriodMinutes * 100.0));
 
         if (metrics.isEmpty()) {
             return incidentBasedUptime;
@@ -88,18 +117,77 @@ public class SlaCalculator {
     }
 
     private double calculateIncidentDowntimeMinutes(List<Incident> incidents,
+                                                    List<MaintenanceWindow> windows,
                                                     LocalDateTime periodStart,
                                                     LocalDateTime periodEnd) {
         return incidents.stream()
-                .mapToLong(incident -> overlapMinutes(incident, periodStart, periodEnd))
+                .mapToLong(incident -> {
+                    LocalDateTime incidentEnd = incident.getEndTime() != null
+                            ? incident.getEndTime()
+                            : periodEnd;
+                    long raw = overlapMinutes(
+                            incident.getStartTime(), incidentEnd, periodStart, periodEnd);
+                    long excluded = windows.stream()
+                            .mapToLong(window -> overlapOfThree(
+                                    incident.getStartTime(),
+                                    incidentEnd,
+                                    window.getStartTime(),
+                                    window.getEndTime(),
+                                    periodStart,
+                                    periodEnd))
+                            .sum();
+                    return Math.max(0, raw - Math.min(excluded, raw));
+                })
                 .sum();
     }
 
-    private long overlapMinutes(Incident incident, LocalDateTime periodStart, LocalDateTime periodEnd) {
-        LocalDateTime incidentEnd = incident.getEndTime() != null ? incident.getEndTime() : periodEnd;
-        LocalDateTime effectiveStart = incident.getStartTime().isAfter(periodStart)
-                ? incident.getStartTime() : periodStart;
-        LocalDateTime effectiveEnd = incidentEnd.isBefore(periodEnd) ? incidentEnd : periodEnd;
+    private long calculateMaintenanceMinutes(List<MaintenanceWindow> windows,
+                                             LocalDateTime periodStart,
+                                             LocalDateTime periodEnd) {
+        return windows.stream()
+                .mapToLong(window -> overlapMinutes(
+                        window.getStartTime(), window.getEndTime(), periodStart, periodEnd))
+                .sum();
+    }
+
+    private boolean isInsideMaintenance(LocalDateTime timestamp, List<MaintenanceWindow> windows) {
+        if (timestamp == null) {
+            return false;
+        }
+        return windows.stream().anyMatch(window ->
+                !timestamp.isBefore(window.getStartTime()) && timestamp.isBefore(window.getEndTime()));
+    }
+
+    private long overlapOfThree(LocalDateTime aStart,
+                                LocalDateTime aEnd,
+                                LocalDateTime bStart,
+                                LocalDateTime bEnd,
+                                LocalDateTime periodStart,
+                                LocalDateTime periodEnd) {
+        LocalDateTime start = latest(aStart, bStart, periodStart);
+        LocalDateTime end = earliest(aEnd, bEnd, periodEnd);
+        if (!start.isBefore(end)) {
+            return 0;
+        }
+        return Duration.between(start, end).toMinutes();
+    }
+
+    private LocalDateTime latest(LocalDateTime a, LocalDateTime b, LocalDateTime c) {
+        LocalDateTime result = a.isAfter(b) ? a : b;
+        return result.isAfter(c) ? result : c;
+    }
+
+    private LocalDateTime earliest(LocalDateTime a, LocalDateTime b, LocalDateTime c) {
+        LocalDateTime result = a.isBefore(b) ? a : b;
+        return result.isBefore(c) ? result : c;
+    }
+
+    private long overlapMinutes(LocalDateTime rangeStart,
+                                LocalDateTime rangeEnd,
+                                LocalDateTime periodStart,
+                                LocalDateTime periodEnd) {
+        LocalDateTime effectiveStart = rangeStart.isAfter(periodStart) ? rangeStart : periodStart;
+        LocalDateTime effectiveEnd = rangeEnd.isBefore(periodEnd) ? rangeEnd : periodEnd;
 
         if (!effectiveStart.isBefore(effectiveEnd)) {
             return 0;
