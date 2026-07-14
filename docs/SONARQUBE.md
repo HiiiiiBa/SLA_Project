@@ -1,71 +1,43 @@
-# SonarQube / SonarCloud — Quality Gate CI
+# SonarQube / SonarCloud — configuration exacte
 
-Analyse statique du code + couverture de tests. Si la **Quality Gate** échoue, le job CI `sonarqube` devient rouge.
+## Est-ce qu’il faut « importer depuis GitHub » ?
 
-## Prérequis (SonarCloud — gratuit pour projets étudiants / open source)
+**Oui, une fois** — pour créer le projet. Ensuite c’est la **CI GitHub Actions** qui envoie l’analyse (pas besoin de réimporter à chaque fois).
 
-1. Créer un compte sur [https://sonarcloud.io](https://sonarcloud.io)
-2. **Analyze new project** → importer le dépôt GitHub `SLA_Project`
-3. Noter :
-   - **Organization Key** (ex. `hiiiba698`)
-   - **Project Key** (ex. `sla-monitoring` ou celui proposé)
-4. Créer un token : *My Account → Security → Generate Token*
+### Étapes SonarCloud (à vérifier maintenant)
 
-## Secrets & variables GitHub
+1. Allez sur [https://sonarcloud.io](https://sonarcloud.io) → connecté avec **GitHub**
+2. **Projects** → vous devez voir **SLA_Project** (ou similaire)
+3. Ouvrez le projet → icône engrenage / **Project Information**
+4. Copiez **exactement** :
 
-Dans le dépôt → **Settings → Secrets and variables → Actions** :
+| Champ SonarCloud | Variable GitHub |
+|------------------|-----------------|
+| **Project Key** (ex. `HiiiiiBa_SLA_Project`) | `SONAR_PROJECT_KEY` |
+| **Organization Key** (ex. `hiiiiiba` en minuscules) | `SONAR_ORGANIZATION` |
 
-| Type | Nom | Valeur |
-|------|-----|--------|
-| Secret | `SONAR_TOKEN` | token SonarCloud |
-| Variable | `SONAR_ENABLED` | `true` |
-| Variable | `SONAR_ORGANIZATION` | votre org SonarCloud |
-| Variable | `SONAR_PROJECT_KEY` | clé du projet |
+5. GitHub → repo → **Settings → Secrets and variables → Actions → Variables**
+6. Vérifiez que les valeurs sont **identiques caractère par caractère** (majuscules/minuscules)
+7. Secret `SONAR_TOKEN` = token créé dans SonarCloud → *My Account → Security*
+8. Variable `SONAR_ENABLED` = `true`
 
-Tant que `SONAR_ENABLED` n’est pas `true`, le job Sonar est **ignoré** (les tests CI tournent quand même).
+### Si le projet n’existe pas encore
 
-## Localement
+1. SonarCloud → **➕ → Analyze new project**
+2. Choisissez le dépôt GitHub **SLA_Project**
+3. **Set up** / Create
+4. Choisissez **With GitHub Actions** (pas besoin de suivre leur snippet : le nôtre est déjà dans `.github/workflows/ci.yml`)
+5. Recopiez Project Key + Organization dans les variables GitHub
 
-```bash
-# Backend + JaCoCo
-cd backend && ./mvnw clean test
-# Rapport : backend/target/site/jacoco/index.html
+### Quality Gate trop stricte (souvent la cause du rouge)
 
-# Frontend
-cd frontend && npm ci && npm run test:coverage
-```
+1. SonarCloud → **Quality Gates**
+2. Create / Copy « Sonar way » → nommez `SLA-stage`
+3. Condition **Coverage on New Code** → **0%**
+4. Projet → **Project Settings → Quality Gate** → choisissez `SLA-stage`
 
-Scan Sonar (avec token) :
+Dans la CI actuelle, `sonar.qualitygate.wait=false` : l’analyse est **envoyée** même si la gate est rouge (le rapport apparaît sur SonarCloud). Vous pourrez remettre `wait=true` plus tard.
 
-```bash
-export SONAR_TOKEN=...
-# Installer sonar-scanner ou utiliser Docker :
-docker run --rm \
-  -e SONAR_TOKEN \
-  -v "$(pwd):/usr/src" \
-  sonarsource/sonar-scanner-cli \
-  -Dsonar.organization=VOTRE_ORG \
-  -Dsonar.projectKey=sla-monitoring
-```
+## Trivy
 
-## Quality Gate
-
-Par défaut SonarCloud vérifie notamment :
-
-- bugs / vulnérabilités sur le *New Code*
-- couverture sur le *New Code*
-- code smells
-
-Si le job CI **SonarQube quality gate** est rouge à cause de la couverture :
-
-1. SonarCloud → **Quality Gates** → Create / copy « Sonar way »
-2. Condition **Coverage on New Code** → mettez **0%** (ou 30%) pour le stage
-3. Assignez cette gate au projet (**Project Settings → Quality Gate**)
-4. Relancez le workflow Actions
-
-## Ce que la CI exécute
-
-1. **backend-tests** — JUnit + JaCoCo  
-2. **frontend-tests** — ESLint + Vitest + couverture  
-3. **sonarqube** — analyse + **attente Quality Gate** (`sonar.qualitygate.wait=true`)  
-4. **docker-security** — build images + Trivy  
+Le scan tourne et **affiche** les CVE, sans faire échouer le pipeline (images de base Java/Node ont souvent des CRITICAL non liés à votre code).

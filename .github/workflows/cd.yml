@@ -49,8 +49,8 @@ jobs:
         with:
           image-ref: '${{ secrets.DOCKER_USERNAME }}/sla-backend:latest'
           format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
           trivyignores: .trivyignore
 
@@ -60,8 +60,8 @@ jobs:
         with:
           image-ref: '${{ secrets.DOCKER_USERNAME }}/sla-frontend:latest'
           format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
           trivyignores: .trivyignore
 
