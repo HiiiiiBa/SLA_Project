@@ -18,6 +18,7 @@ interface AuthContextValue {
   canManageOrg: boolean;
   canManageSla: boolean;
   canManageSlaLifecycle: boolean;
+  canManageMaintenance: boolean;
   canApproveRequests: boolean;
   canRequestApproval: boolean;
   canViewClients: boolean;
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       canManageOrg: isAdmin || isManager,
       canManageSla: isAdmin || isManager,
       canManageSlaLifecycle: isAdmin,
+      canManageMaintenance: isAdmin || isManager || isEmployee,
       canApproveRequests: isAdmin,
       canRequestApproval: isManager,
       canViewClients: isAdmin || isManager,

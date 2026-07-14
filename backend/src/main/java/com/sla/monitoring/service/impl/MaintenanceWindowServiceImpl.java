@@ -99,6 +99,7 @@ public class MaintenanceWindowServiceImpl implements MaintenanceWindowService {
     public MaintenanceWindowResponse create(MaintenanceWindowCreateRequest request) {
         validateTimes(request.getStartTime(), request.getEndTime());
         Sla sla = findSlaById(request.getSlaId());
+        employeeScopeService.assertSlaAccess(sla.getId());
         managerScopeService.assertSlaAccess(sla.getId());
 
         MaintenanceWindow window = maintenanceWindowMapper.toEntity(request);
@@ -113,6 +114,7 @@ public class MaintenanceWindowServiceImpl implements MaintenanceWindowService {
     @Transactional
     public MaintenanceWindowResponse update(Long id, MaintenanceWindowUpdateRequest request) {
         MaintenanceWindow window = findEntityById(id);
+        employeeScopeService.assertSlaAccess(window.getSla().getId());
         managerScopeService.assertSlaAccess(window.getSla().getId());
 
         if (window.getStatus() == MaintenanceWindowStatus.CANCELLED
@@ -135,6 +137,7 @@ public class MaintenanceWindowServiceImpl implements MaintenanceWindowService {
     @Transactional
     public MaintenanceWindowResponse cancel(Long id) {
         MaintenanceWindow window = findEntityById(id);
+        employeeScopeService.assertSlaAccess(window.getSla().getId());
         managerScopeService.assertSlaAccess(window.getSla().getId());
 
         if (window.getStatus() == MaintenanceWindowStatus.CANCELLED) {

@@ -152,6 +152,7 @@ Périmètre = projets assignés.
 | SLA (liste et détail) | Consultation ; services associés visibles dans le détail SLA (lecture seule) |
 | Incidents | Incidents assignés uniquement ; mise à jour, commentaires, résolution |
 | Alertes | Consultation |
+| Maintenances | Créer, modifier et annuler sur les SLA de ses projets |
 
 **Pages interdites :** Administration, Clients, Équipes, Services, Rapports.
 
@@ -160,6 +161,7 @@ Périmètre = projets assignés.
 | Dashboard | Projets assignés |
 | SLA, métriques, alertes | Consultation filtrée |
 | Incidents | Mettre à jour la description, commenter, résoudre (**RESOLVED**) — assignation par le manager |
+| Maintenances | Créer / modifier / annuler (périmètre projets assignés) |
 | Interdit | Création d’incidents, auto-assignation, page Services, gestion SLA/services/projets, administration, rapports |
 
 ### Vue manager (MANAGER) — démo

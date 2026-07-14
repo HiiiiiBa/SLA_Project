@@ -17,7 +17,7 @@ import { formatDate } from "@/lib/utils";
 import type { MaintenanceWindow, MaintenanceWindowStatus, Sla } from "@/types";
 
 export default function MaintenancePage() {
-  const { canManageSla, isClient } = useAuth();
+  const { canManageMaintenance, isClient } = useAuth();
   const sessionUserId = useSessionUserId();
   const [windows, setWindows] = useState<MaintenanceWindow[]>([]);
   const [slas, setSlas] = useState<Sla[]>([]);
@@ -92,7 +92,7 @@ export default function MaintenancePage() {
             : "Planifiez des coupures exclues du calcul de conformité SLA."
         }
         action={
-          canManageSla ? (
+          canManageMaintenance ? (
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4" />
               Nouvelle maintenance
@@ -150,7 +150,7 @@ export default function MaintenancePage() {
                     <th className="px-6 py-4 font-medium">Début</th>
                     <th className="px-6 py-4 font-medium">Fin</th>
                     <th className="px-6 py-4 font-medium">Statut</th>
-                    {canManageSla && <th className="px-6 py-4 font-medium">Actions</th>}
+                    {canManageMaintenance && <th className="px-6 py-4 font-medium">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -171,7 +171,7 @@ export default function MaintenancePage() {
                       <td className="px-6 py-4">
                         <MaintenanceStatusBadge status={window.status} />
                       </td>
-                      {canManageSla && (
+                      {canManageMaintenance && (
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="inline-flex items-center gap-1.5">
                             {canEdit(window.status) && (
@@ -206,7 +206,7 @@ export default function MaintenancePage() {
                   icon={CalendarClock}
                   title="Aucune fenêtre de maintenance"
                   description={
-                    canManageSla
+                    canManageMaintenance
                       ? "Planifiez une coupure pour qu'elle n'impacte pas le score SLA."
                       : "Aucune maintenance planifiée sur votre périmètre."
                   }
@@ -217,7 +217,7 @@ export default function MaintenancePage() {
         </CardBody>
       </Card>
 
-      {canManageSla && (
+      {canManageMaintenance && (
         <MaintenanceWindowFormModal
           open={modalOpen}
           onClose={() => {
