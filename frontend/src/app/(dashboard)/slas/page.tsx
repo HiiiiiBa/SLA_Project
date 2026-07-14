@@ -15,7 +15,7 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/context/AuthContext";
 import { useSessionUserId } from "@/hooks/useSessionUserId";
 import { ApiError, apiFetch } from "@/lib/api";
-import { formatDate, formatPercent } from "@/lib/utils";
+import { formatPercent } from "@/lib/utils";
 import type { Sla } from "@/types";
 
 export default function SlasPage() {

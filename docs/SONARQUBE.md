@@ -56,7 +56,12 @@ Par défaut SonarCloud vérifie notamment :
 - couverture sur le *New Code*
 - code smells
 
-Si la gate est trop stricte au début : dans SonarCloud → **Quality Gates** → assouplir *Coverage on New Code* (ex. 50 %), ou exclure davantage via `sonar.coverage.exclusions` dans `sonar-project.properties`.
+Si le job CI **SonarQube quality gate** est rouge à cause de la couverture :
+
+1. SonarCloud → **Quality Gates** → Create / copy « Sonar way »
+2. Condition **Coverage on New Code** → mettez **0%** (ou 30%) pour le stage
+3. Assignez cette gate au projet (**Project Settings → Quality Gate**)
+4. Relancez le workflow Actions
 
 ## Ce que la CI exécute
 

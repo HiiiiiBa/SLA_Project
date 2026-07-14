@@ -46,7 +46,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -73,7 +73,6 @@ jobs:
     name: SonarQube quality gate
     needs: [backend-tests, frontend-tests]
     runs-on: ubuntu-latest
-    # Nécessite le secret SONAR_TOKEN (voir docs/SONARQUBE.md)
     if: ${{ vars.SONAR_ENABLED == 'true' }}
     steps:
       - name: Checkout repository
@@ -91,7 +90,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -106,13 +105,14 @@ jobs:
           npm run test:coverage
 
       - name: SonarCloud scan + Quality Gate
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.qualitygate.wait=true
 
   docker-security:
@@ -129,7 +129,7 @@ jobs:
           docker build -t sla-frontend:ci ./frontend
 
       - name: Trivy scan backend image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: sla-backend:ci
           format: table
@@ -139,7 +139,7 @@ jobs:
           trivyignores: .trivyignore
 
       - name: Trivy scan frontend image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: sla-frontend:ci
           format: table

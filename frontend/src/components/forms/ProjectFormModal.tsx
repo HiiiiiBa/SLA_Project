@@ -15,7 +15,6 @@ import type {
   ProjectStatus,
   ProjectUpdateRequest,
   Team,
-  User,
 } from "@/types";
 
 interface ProjectFormModalProps {

@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   Building2,
   FolderKanban,
-  Gauge,
   Server,
   Siren,
 } from "lucide-react";
