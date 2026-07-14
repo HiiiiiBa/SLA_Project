@@ -10,7 +10,8 @@ Système intelligent de gestion des SLA — backend Spring Boot + frontend Next.
 | Backend API | http://localhost:8080 | REST + WebSocket |
 | Swagger | http://localhost:8080/swagger-ui.html | Documentation API |
 | Prometheus | http://localhost:9090 | Métriques scrapées |
-| Grafana | http://localhost:3001 | Dashboards (`admin` / `admin`) |
+| Loki | http://localhost:3100 | Agrégation de logs |
+| Grafana | http://localhost:3001 | Dashboards (`admin` / `admin`) — métriques + logs |
 | PostgreSQL | *(interne Docker)* | Base `sla_monitoring` — non exposée sur l'hôte par défaut |
 | MailHog UI | http://localhost:8025 | Emails de test capturés |
 

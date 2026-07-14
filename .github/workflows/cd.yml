@@ -69,8 +69,11 @@ jobs:
             fi
             if [ -d k8s/monitoring ]; then
               sudo kubectl apply -f k8s/monitoring/prometheus.yaml
+              sudo kubectl apply -f k8s/monitoring/loki.yaml
+              sudo kubectl apply -f k8s/monitoring/promtail.yaml
               sudo kubectl apply -f k8s/monitoring/grafana.yaml
               sudo kubectl apply -f k8s/monitoring/ingressroute.yaml
+              sudo kubectl rollout restart deployment/grafana -n sla-monitoring || true
             fi
 
             # Tirer les images fraîchement poussées sur Docker Hub
