@@ -1,0 +1,18 @@
+# Accès public web (Oracle Cloud)
+#
+# URL principale (DNS gratuit sslip.io → IP OCI) :
+#   http://sla.84.8.216.210.sslip.io
+#   http://sla.84.8.216.210.sslip.io/login
+#
+# Aussi :
+#   http://84.8.216.210
+#   http://sla-monitoring.local   (uniquement si hosts configuré)
+#
+# Monitoring :
+#   http://grafana.84.8.216.210.sslip.io
+#   http://prometheus.84.8.216.210.sslip.io
+#
+# Préférer HTTP pour téléphone / démo (certificat auto-signé = avertissement HTTPS).
+PUBLIC_HOST=sla.84.8.216.210.sslip.io
+PUBLIC_URL=http://sla.84.8.216.210.sslip.io
+PUBLIC_IP=84.8.216.210

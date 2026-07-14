@@ -1,5 +1,5 @@
-# Traefik IngressRoute (recommandé) — route explicite sur l'entrypoint web
-# Remplace l'Ingress Kubernetes standard qui peut être ignoré / mal câblé.
+# Hosts publics (sslip.io = DNS gratuit vers l'IP OCI) + .local (PC avec hosts)
+# URL web : http://sla.84.8.216.210.sslip.io
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -12,15 +12,13 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`sla-monitoring.local`)
+    - match: Host(`sla-monitoring.local`) || Host(`sla.84.8.216.210.sslip.io`)
       kind: Rule
       services:
         - name: frontend
           port: 3000
-          # Next.js écoute HTTP plain ; pas de TLS vers le backend
           scheme: http
 ---
-# Option HTTPS (si certificats / entrypoint websecure déjà configurés)
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -32,12 +30,31 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`sla-monitoring.local`)
+    - match: Host(`sla-monitoring.local`) || Host(`sla.84.8.216.210.sslip.io`)
       kind: Rule
       services:
         - name: frontend
           port: 3000
           scheme: http
-  # Décommentez si vous avez un certificat TLS (secret ou cert-manager)
-  # tls:
-  #   secretName: sla-monitoring-tls
+  tls:
+    secretName: sla-monitoring-tls
+---
+# Accès direct par IP publique (téléphone / PC sans DNS custom)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: frontend-ip
+  namespace: sla-monitoring
+  labels:
+    app: frontend
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`84.8.216.210`) || PathPrefix(`/`)
+      kind: Rule
+      priority: 1
+      services:
+        - name: frontend
+          port: 3000
+          scheme: http

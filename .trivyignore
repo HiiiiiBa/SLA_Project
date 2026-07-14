@@ -1,0 +1,3 @@
+# Ignorer des CVE documentées (ajouter une ligne = CVE-YYYY-NNNN)
+# Exemple :
+# CVE-2024-0000

@@ -71,6 +71,9 @@ spec:
       labels:
         app: prometheus
     spec:
+      # hostNetwork : Grafana scrape via 10.0.0.247:9090 (DNS cluster souvent cassé)
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       serviceAccountName: prometheus
       containers:
         - name: prometheus
@@ -80,8 +83,10 @@ spec:
             - --storage.tsdb.path=/prometheus
             - --web.enable-lifecycle
             - --storage.tsdb.retention.time=15d
+            - --web.listen-address=0.0.0.0:9090
           ports:
             - containerPort: 9090
+              hostPort: 9090
               name: http
           volumeMounts:
             - name: config

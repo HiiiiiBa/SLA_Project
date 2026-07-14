@@ -22,6 +22,32 @@ Voir [`infra/README.md`](infra/README.md) :
 - **Terraform** — réseau OCI (VCN, Security List 22/80/443)
 - **Ansible** — configuration / vérif du serveur K3s
 
+## Accès web public (Oracle Cloud)
+
+| URL | Usage |
+|-----|--------|
+| **http://84.8.216.210** | Accès public (téléphone, autres PC) |
+| http://84.8.216.210/login | Page de connexion |
+| http://sla-monitoring.local | Uniquement si fichier `hosts` configuré |
+
+Grafana : ouvrir via IP + Host, ou `hosts` local (`grafana.sla-monitoring.local`).
+
+> `sslip.io` est optionnel ; certains réseaux DNS ne le résolvent pas. L’IP publique Oracle suffit.
+
+## DevSecOps (étape 9)
+
+Voir [`k8s/security/README.md`](k8s/security/README.md) :
+
+- **Trivy** — scan d’images Docker dans CI/CD (bloque les CVE CRITICAL)
+- **HTTPS** — certificat TLS auto-signé (`sla-monitoring-tls`) + IngressRoutes `websecure`
+- **Secrets K8s** — `JWT_SECRET` / `GEMINI_API_KEY` hors du dépôt
+
+## Qualité & tests (CI)
+
+- **Backend** — JUnit + couverture **JaCoCo**
+- **Frontend** — ESLint + **Vitest**
+- **SonarQube / SonarCloud** — analyse + Quality Gate (voir [`docs/SONARQUBE.md`](docs/SONARQUBE.md))
+
 ## Démarrage rapide
 
 ### Prérequis

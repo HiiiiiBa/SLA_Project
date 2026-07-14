@@ -7,13 +7,35 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`grafana.sla-monitoring.local`)
+    - match: Host(`grafana.sla-monitoring.local`) || Host(`grafana.84.8.216.210.sslip.io`)
       kind: Rule
       services:
         - name: grafana
           port: 3000
-    - match: Host(`prometheus.sla-monitoring.local`)
+    - match: Host(`prometheus.sla-monitoring.local`) || Host(`prometheus.84.8.216.210.sslip.io`)
       kind: Rule
       services:
         - name: prometheus
           port: 9090
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: monitoring-secure
+  namespace: sla-monitoring
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`grafana.sla-monitoring.local`) || Host(`grafana.84.8.216.210.sslip.io`)
+      kind: Rule
+      services:
+        - name: grafana
+          port: 3000
+    - match: Host(`prometheus.sla-monitoring.local`) || Host(`prometheus.84.8.216.210.sslip.io`)
+      kind: Rule
+      services:
+        - name: prometheus
+          port: 9090
+  tls:
+    secretName: sla-monitoring-tls

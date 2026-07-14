@@ -1,0 +1,18 @@
+# Placeholder NetworkPolicy (démo) — n'isole pas encore le trafic.
+# Remplacer `ingress: [{}]` / `egress: [{}]` par des règles ciblées en production.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sla-default
+  namespace: sla-monitoring
+  labels:
+    app.kubernetes.io/part-of: sla-monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - {}
+  egress:
+    - {}

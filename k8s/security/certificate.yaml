@@ -1,0 +1,20 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: sla-monitoring-tls
+  namespace: sla-monitoring
+spec:
+  secretName: sla-monitoring-tls
+  duration: 8760h # 1 an
+  renewBefore: 720h # 30 jours
+  subject:
+    organizations:
+      - SLA Monitoring
+  commonName: sla-monitoring.local
+  dnsNames:
+    - sla-monitoring.local
+    - grafana.sla-monitoring.local
+    - prometheus.sla-monitoring.local
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer

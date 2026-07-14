@@ -1,0 +1,7 @@
+# Issuer auto-signé — adapté aux hôtes *.local (pas de DNS public / Let's Encrypt)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}

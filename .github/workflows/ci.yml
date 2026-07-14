@@ -4,47 +4,146 @@ on:
   push:
     branches:
       - main
-
   pull_request:
     branches:
       - main
 
 jobs:
-  build:
-
+  backend-tests:
+    name: Backend tests + coverage
     runs-on: ubuntu-latest
-
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: "21"
+          distribution: temurin
           cache: maven
 
-      - name: Build backend
+      - name: Run backend tests (JaCoCo)
         working-directory: backend
-        run: ./mvnw clean test
+        run: ./mvnw -B clean test
+
+      - name: Upload JaCoCo report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco/
+          retention-days: 7
+
+  frontend-tests:
+    name: Frontend lint + tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install frontend dependencies
+      - name: Install dependencies
         working-directory: frontend
         run: npm ci
 
-      - name: Build frontend
+      - name: ESLint
         working-directory: frontend
-        run: npm run build
-      
-      - name: Build Docker images
-        run: docker compose build
+        run: npm run lint
 
+      - name: Unit tests + coverage
+        working-directory: frontend
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
+  sonarqube:
+    name: SonarQube quality gate
+    needs: [backend-tests, frontend-tests]
+    runs-on: ubuntu-latest
+    # Nécessite le secret SONAR_TOKEN (voir docs/SONARQUBE.md)
+    if: ${{ vars.SONAR_ENABLED == 'true' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Backend tests (coverage for Sonar)
+        working-directory: backend
+        run: ./mvnw -B clean test
+
+      - name: Frontend coverage for Sonar
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run test:coverage
+
+      - name: SonarCloud scan + Quality Gate
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.qualitygate.wait=true
+
+  docker-security:
+    name: Docker build + Trivy
+    needs: [backend-tests, frontend-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker images
+        run: |
+          docker build -t sla-backend:ci ./backend
+          docker build -t sla-frontend:ci ./frontend
+
+      - name: Trivy scan backend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: sla-backend:ci
+          format: table
+          exit-code: "1"
+          severity: CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+
+      - name: Trivy scan frontend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: sla-frontend:ci
+          format: table
+          exit-code: "1"
+          severity: CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore

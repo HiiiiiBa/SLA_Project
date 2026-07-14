@@ -1,0 +1,215 @@
+@startuml Diagramme_Classes_SLA_Monitoring
+title Diagramme de classes - SLA Monitoring
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+left to right direction
+
+abstract class BaseAuditEntity {
+  #createdAt : LocalDateTime
+  #updatedAt : LocalDateTime
+}
+
+class User {
+  -id : Long
+  -firstName : String
+  -lastName : String
+  -email : String
+  -password : String
+  -role : Role
+  -enabled : boolean
+}
+
+class Client {
+  -id : Long
+  -name : String
+  -email : String
+  -projectName : String
+}
+
+class Project {
+  -id : Long
+  -name : String
+  -description : String
+  -status : ProjectStatus
+}
+
+class Team {
+  -id : Long
+  -name : String
+  -description : String
+}
+
+class Sla {
+  -id : Long
+  -name : String
+  -status : SlaStatus
+  -uptimeTarget : Double
+  -responseTimeLimit : Integer
+  -errorRateLimit : Double
+}
+
+class Service {
+  -id : Long
+  -name : String
+  -status : ServiceStatus
+}
+
+class Incident {
+  -id : Long
+  -startTime : LocalDateTime
+  -endTime : LocalDateTime
+  -status : IncidentStatus
+  -severity : IncidentSeverity
+  -description : String
+}
+
+class IncidentComment {
+  -id : Long
+  -content : String
+}
+
+class Alert {
+  -id : Long
+  -type : AlertType
+  -message : String
+  -status : AlertStatus
+}
+
+class MonitoringMetric {
+  -id : Long
+  -timestamp : LocalDateTime
+  -responseTime : Double
+  -status : MetricStatus
+  -errorRate : Double
+}
+
+class Report {
+  -id : Long
+  -slaResult : Double
+  -periodStart : LocalDateTime
+  -periodEnd : LocalDateTime
+  -generatedAt : LocalDateTime
+  -format : ReportFormat
+}
+
+class MaintenanceWindow {
+  -id : Long
+  -title : String
+  -reason : String
+  -startTime : LocalDateTime
+  -endTime : LocalDateTime
+  -status : MaintenanceWindowStatus
+}
+
+class ApprovalRequest {
+  -id : Long
+  -actionType : ApprovalActionType
+  -targetType : ApprovalTargetType
+  -targetId : Long
+  -targetLabel : String
+  -reason : String
+  -status : ApprovalRequestStatus
+  -reviewComment : String
+  -reviewedAt : LocalDateTime
+  -executedAt : LocalDateTime
+}
+
+class ExecutiveReport {
+  -id : Long
+  -projectName : String
+  -clientName : String
+  -slaName : String
+  -periodStart : LocalDateTime
+  -periodEnd : LocalDateTime
+  -generatedAt : LocalDateTime
+  -kpiSummary : String
+  -narrative : String
+}
+
+class RefreshToken {
+  -id : Long
+  -token : String
+  -expiryDate : LocalDateTime
+  -revoked : boolean
+}
+
+class Notification {
+  -id : Long
+  -alertId : Long
+  -channel : NotificationChannel
+  -status : NotificationStatus
+  -recipient : String
+  -message : String
+  -slaId : Long
+  -slaName : String
+  -clientName : String
+  -createdAt : LocalDateTime
+}
+
+' --- Héritage ---
+BaseAuditEntity <|-- User
+BaseAuditEntity <|-- Client
+BaseAuditEntity <|-- Project
+BaseAuditEntity <|-- Team
+BaseAuditEntity <|-- Sla
+BaseAuditEntity <|-- Service
+BaseAuditEntity <|-- Incident
+BaseAuditEntity <|-- IncidentComment
+BaseAuditEntity <|-- Alert
+BaseAuditEntity <|-- MonitoringMetric
+BaseAuditEntity <|-- Report
+BaseAuditEntity <|-- MaintenanceWindow
+BaseAuditEntity <|-- ApprovalRequest
+BaseAuditEntity <|-- ExecutiveReport
+
+' --- Client ---
+Client "1" *-- "0..*" Sla : slas
+Client "1" *-- "0..*" Project : projects
+Client "0..*" -- "0..*" User : managers
+
+' --- SLA ---
+Sla "1" *-- "0..*" Service : services
+Sla "1" *-- "0..*" MonitoringMetric : metrics
+Sla "1" *-- "0..*" Incident : incidents
+Sla "1" *-- "0..*" Alert : alerts
+Sla "1" *-- "0..*" Report : reports
+Sla "1" --> "0..*" MaintenanceWindow : sla
+
+' --- Service ---
+Service "1" *-- "0..*" MonitoringMetric : metrics
+Service "0..1" --> "0..*" Alert : service
+Service "0..1" --> "0..*" MaintenanceWindow : service
+
+' --- Project / Team ---
+Project "*" --> "1" Client : client
+Project "*" --> "0..1" Team : team
+Project "*" --> "0..1" Sla : sla
+Project "0..*" -- "0..*" User : assignedMembers
+
+Team "*" --> "1" User : manager
+Team "0..*" -- "0..*" User : members
+
+' --- Incident ---
+Incident "*" --> "1" Sla : sla
+Incident "*" --> "0..1" Project : project
+Incident "*" --> "0..1" User : assignee
+IncidentComment "*" --> "1" Incident : incident
+IncidentComment "*" --> "1" User : author
+
+' --- Rapports & approbations ---
+ExecutiveReport "*" --> "1" Project : project
+ExecutiveReport "*" --> "1" Sla : sla
+ExecutiveReport "*" --> "0..1" User : generatedBy
+
+ApprovalRequest "*" --> "1" User : requester
+ApprovalRequest "*" --> "0..1" User : reviewer
+ApprovalRequest ..> Project : targetType/id
+ApprovalRequest ..> Team : targetType/id
+ApprovalRequest ..> Sla : targetType/id
+
+' --- Auth & notifications ---
+RefreshToken "*" --> "1" User : user
+Notification ..> Alert : alertId
+Notification ..> Sla : slaId
+
+@enduml

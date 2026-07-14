@@ -9,23 +9,31 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`sla-monitoring.local`) && PathPrefix(`/api`)
+    - match: (Host(`sla-monitoring.local`) || Host(`sla.84.8.216.210.sslip.io`) || Host(`84.8.216.210`)) && PathPrefix(`/api`)
       kind: Rule
       priority: 100
       services:
         - name: backend
           port: 8080
           scheme: http
-    - match: Host(`sla-monitoring.local`) && PathPrefix(`/ws`)
+    - match: (Host(`sla-monitoring.local`) || Host(`sla.84.8.216.210.sslip.io`) || Host(`84.8.216.210`)) && PathPrefix(`/ws`)
       kind: Rule
       priority: 100
       services:
         - name: backend
           port: 8080
           scheme: http
-    - match: Host(`sla-monitoring.local`) && PathPrefix(`/actuator`)
+    - match: (Host(`sla-monitoring.local`) || Host(`sla.84.8.216.210.sslip.io`) || Host(`84.8.216.210`)) && PathPrefix(`/actuator`)
       kind: Rule
       priority: 100
+      services:
+        - name: backend
+          port: 8080
+          scheme: http
+    # API aussi via IP sans Host connu (PathPrefix seul, priorité haute)
+    - match: PathPrefix(`/api`) || PathPrefix(`/ws`) || PathPrefix(`/actuator`)
+      kind: Rule
+      priority: 50
       services:
         - name: backend
           port: 8080
@@ -42,24 +50,26 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`sla-monitoring.local`) && PathPrefix(`/api`)
+    - match: (Host(`sla-monitoring.local`) || Host(`sla.84.8.216.210.sslip.io`)) && PathPrefix(`/api`)
       kind: Rule
       priority: 100
       services:
         - name: backend
           port: 8080
           scheme: http
-    - match: Host(`sla-monitoring.local`) && PathPrefix(`/ws`)
+    - match: (Host(`sla-monitoring.local`) || Host(`sla.84.8.216.210.sslip.io`)) && PathPrefix(`/ws`)
       kind: Rule
       priority: 100
       services:
         - name: backend
           port: 8080
           scheme: http
-    - match: Host(`sla-monitoring.local`) && PathPrefix(`/actuator`)
+    - match: (Host(`sla-monitoring.local`) || Host(`sla.84.8.216.210.sslip.io`)) && PathPrefix(`/actuator`)
       kind: Rule
       priority: 100
       services:
         - name: backend
           port: 8080
           scheme: http
+  tls:
+    secretName: sla-monitoring-tls

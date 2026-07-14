@@ -14,3 +14,7 @@ node_modules/
 *.iml
 .DS_Store
 Thumbs.db
+
+# Certificats locaux exportés
+k8s/security/*.crt
+
