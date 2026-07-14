@@ -4,28 +4,6 @@ metadata:
   name: promtail
   namespace: sla-monitoring
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: sla-promtail
-rules:
-  - apiGroups: [""]
-    resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
-    verbs: ["get", "list", "watch"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: sla-promtail
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: sla-promtail
-subjects:
-  - kind: ServiceAccount
-    name: promtail
-    namespace: sla-monitoring
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -41,46 +19,36 @@ data:
       filename: /run/promtail/positions.yaml
 
     clients:
-      - url: http://loki.sla-monitoring.svc.cluster.local:3100/loki/api/v1/push
+      # Node-local Loki (hostNetwork) — avoids broken ClusterIP DNS on this node
+      - url: http://127.0.0.1:3100/loki/api/v1/push
 
     scrape_configs:
-      - job_name: kubernetes-pods
-        kubernetes_sd_configs:
-          - role: pod
-            namespaces:
-              names:
-                - sla-monitoring
-                - kube-system
+      # Static file scrape — no Kubernetes API required (avoids ClusterIP API timeout)
+      - job_name: sla-pod-logs
+        static_configs:
+          - targets: [localhost]
+            labels:
+              job: sla-pods
+              __path__: /var/log/pods/sla-monitoring_*/*/*.log
         pipeline_stages:
           - cri: {}
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_node_name]
-            target_label: __host__
-          - action: replace
-            replacement: $1
-            separator: /
-            source_labels:
-              - __meta_kubernetes_namespace
-              - __meta_kubernetes_pod_name
-            target_label: job
-          - action: replace
-            source_labels: [__meta_kubernetes_namespace]
-            target_label: namespace
-          - action: replace
-            source_labels: [__meta_kubernetes_pod_name]
-            target_label: pod
-          - action: replace
-            source_labels: [__meta_kubernetes_pod_container_name]
-            target_label: container
-          - action: replace
-            source_labels: [__meta_kubernetes_pod_label_app]
-            target_label: app
-          - replacement: /var/log/pods/*$1/*.log
-            separator: /
-            source_labels:
-              - __meta_kubernetes_pod_uid
-              - __meta_kubernetes_pod_container_name
-            target_label: __path__
+          - regex:
+              source: filename
+              expression: '/var/log/pods/(?P<namespace>[^_/]+)_(?P<pod>[^_/]+)_[^/]+/(?P<container>[^/]+)/'
+          - labels:
+              namespace:
+              pod:
+              container:
+          - match:
+              selector: '{container="backend"}'
+              stages:
+                - static_labels:
+                    app: backend
+          - match:
+              selector: '{container="frontend"}'
+              stages:
+                - static_labels:
+                    app: frontend
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -99,6 +67,8 @@ spec:
         app: promtail
     spec:
       serviceAccountName: promtail
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: promtail
           image: grafana/promtail:3.4.2
@@ -114,9 +84,6 @@ spec:
               mountPath: /run/promtail
             - name: pods
               mountPath: /var/log/pods
-              readOnly: true
-            - name: containers
-              mountPath: /var/lib/docker/containers
               readOnly: true
           resources:
             requests:
@@ -134,6 +101,3 @@ spec:
         - name: pods
           hostPath:
             path: /var/log/pods
-        - name: containers
-          hostPath:
-            path: /var/lib/docker/containers

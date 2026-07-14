@@ -66,6 +66,8 @@ spec:
       labels:
         app: loki
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       securityContext:
         fsGroup: 10001
         runAsUser: 10001
@@ -78,6 +80,7 @@ spec:
           ports:
             - name: http
               containerPort: 3100
+              hostPort: 3100
           volumeMounts:
             - name: config
               mountPath: /etc/loki

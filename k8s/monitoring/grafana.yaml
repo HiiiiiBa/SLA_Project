@@ -18,7 +18,8 @@ data:
         type: loki
         uid: loki
         access: proxy
-        url: http://loki.sla-monitoring.svc.cluster.local:3100
+        # Node hostPort (hostNetwork Loki) — reliable when ClusterIP DNS is broken
+        url: http://10.0.0.247:3100
         editable: false
 ---
 apiVersion: v1
