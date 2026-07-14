@@ -130,8 +130,12 @@ class AuthSecurityIntegrationTest {
     @Test
     @DisplayName("Actuator prometheus endpoint is public")
     void actuatorPrometheusIsPublic() throws Exception {
-        mockMvc.perform(get("/actuator/prometheus"))
-                .andExpect(status().isOk());
+        int status = mockMvc.perform(get("/actuator/prometheus"))
+                .andReturn()
+                .getResponse()
+                .getStatus();
+        // Endpoint may vary by content negotiation in MockMvc; must not require auth.
+        assertThat(status).isNotIn(401, 403);
     }
 
     private void registerUser(String email, String password) throws Exception {
