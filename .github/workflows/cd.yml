@@ -5,10 +5,14 @@ on:
     branches:
       - main
 
+concurrency:
+  group: cd-main
+  cancel-in-progress: true
+
 jobs:
   docker:
-
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
 
