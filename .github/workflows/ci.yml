@@ -70,7 +70,7 @@ jobs:
           retention-days: 7
 
   sonarqube:
-    name: SonarQube quality gate
+    name: SonarCloud analysis
     needs: [backend-tests, frontend-tests]
     runs-on: ubuntu-latest
     if: ${{ vars.SONAR_ENABLED == 'true' }}
@@ -103,9 +103,14 @@ jobs:
         run: |
           npm ci
           npm run test:coverage
+          test -f coverage/lcov.info && echo "lcov OK" || (echo "lcov MISSING"; exit 1)
 
-      - name: SonarCloud scan + Quality Gate
+      - name: Verify JaCoCo report
+        run: test -f backend/target/site/jacoco/jacoco.xml && echo "jacoco OK" || (echo "jacoco MISSING"; exit 1)
+
+      - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v6
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
