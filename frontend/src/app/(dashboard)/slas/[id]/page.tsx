@@ -248,52 +248,54 @@ export default function SlaDetailPage() {
         </CardBody>
       </Card>
 
-      <Card className="mb-6">
-        <CardHeader
-          title="Prochaines maintenances"
-          description="Fenêtres exclues du calcul SLA"
-          action={
-            <Link
-              href="/maintenance"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Voir tout
-            </Link>
-          }
-        />
-        <CardBody className="overflow-x-auto p-0">
-          {maintenances.length > 0 ? (
-            <table className="min-w-full text-sm">
-              <thead className="table-head">
-                <tr>
-                  <th className="px-6 py-4 font-medium">Titre</th>
-                  <th className="px-6 py-4 font-medium">Début</th>
-                  <th className="px-6 py-4 font-medium">Fin</th>
-                  <th className="px-6 py-4 font-medium">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {maintenances.map((window) => (
-                  <tr key={window.id} className="table-row">
-                    <td className="px-6 py-4 font-medium text-heading">{window.title}</td>
-                    <td className="px-6 py-4 text-body">{formatDate(window.startTime)}</td>
-                    <td className="px-6 py-4 text-body">{formatDate(window.endTime)}</td>
-                    <td className="px-6 py-4">
-                      <MaintenanceStatusBadge status={window.status} />
-                    </td>
+      {!isClient && (
+        <Card className="mb-6">
+          <CardHeader
+            title="Prochaines maintenances"
+            description="Fenêtres exclues du calcul SLA"
+            action={
+              <Link
+                href="/maintenance"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Voir tout
+              </Link>
+            }
+          />
+          <CardBody className="overflow-x-auto p-0">
+            {maintenances.length > 0 ? (
+              <table className="min-w-full text-sm">
+                <thead className="table-head">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">Titre</th>
+                    <th className="px-6 py-4 font-medium">Début</th>
+                    <th className="px-6 py-4 font-medium">Fin</th>
+                    <th className="px-6 py-4 font-medium">Statut</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <EmptyState
-              icon={CalendarClock}
-              title="Aucune maintenance à venir"
-              description="Les coupures planifiées apparaîtront ici et ne pénaliseront pas le SLA."
-            />
-          )}
-        </CardBody>
-      </Card>
+                </thead>
+                <tbody>
+                  {maintenances.map((window) => (
+                    <tr key={window.id} className="table-row">
+                      <td className="px-6 py-4 font-medium text-heading">{window.title}</td>
+                      <td className="px-6 py-4 text-body">{formatDate(window.startTime)}</td>
+                      <td className="px-6 py-4 text-body">{formatDate(window.endTime)}</td>
+                      <td className="px-6 py-4">
+                        <MaintenanceStatusBadge status={window.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <EmptyState
+                icon={CalendarClock}
+                title="Aucune maintenance à venir"
+                description="Les coupures planifiées apparaîtront ici et ne pénaliseront pas le SLA."
+              />
+            )}
+          </CardBody>
+        </Card>
+      )}
 
       <Card className="mb-6">
         <CardHeader

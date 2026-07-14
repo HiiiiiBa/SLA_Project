@@ -33,6 +33,8 @@ jobs:
       - name: Build frontend image
         run: |
           docker build \
+            --build-arg NEXT_PUBLIC_API_URL=http://sla-monitoring.local \
+            --build-arg NEXT_PUBLIC_WS_URL=http://sla-monitoring.local/ws \
             -t ${{ secrets.DOCKER_USERNAME }}/sla-frontend:latest \
             ./frontend
 
@@ -53,10 +55,33 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
             cd ~/SLA_Project
+
+            # Récupérer le code (manifests k8s, etc.)
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Appliquer le routage Traefik
+            if [ -d k8s/traefik ]; then
+              sudo kubectl apply -f k8s/traefik/ingressroute-frontend.yaml
+              sudo kubectl apply -f k8s/traefik/ingressroute-backend.yaml
+            fi
+
+            # Tirer les images fraîchement poussées sur Docker Hub
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/sla-backend:latest
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/sla-frontend:latest
+            sudo docker save ${{ secrets.DOCKER_USERNAME }}/sla-backend:latest | sudo k3s ctr images import -
+            sudo docker save ${{ secrets.DOCKER_USERNAME }}/sla-frontend:latest | sudo k3s ctr images import -
+
+            # Forcer le redeploy avec les nouvelles images
+            sudo kubectl set image deployment/backend backend=${{ secrets.DOCKER_USERNAME }}/sla-backend:latest -n sla-monitoring
+            sudo kubectl set image deployment/frontend frontend=${{ secrets.DOCKER_USERNAME }}/sla-frontend:latest -n sla-monitoring
+            sudo kubectl patch deploy frontend -n sla-monitoring -p '{"spec":{"template":{"spec":{"containers":[{"name":"frontend","imagePullPolicy":"Always"}]}}}}'
+            sudo kubectl patch deploy backend -n sla-monitoring -p '{"spec":{"template":{"spec":{"containers":[{"name":"backend","imagePullPolicy":"Always"}]}}}}'
 
             sudo kubectl rollout restart deployment/backend -n sla-monitoring
             sudo kubectl rollout restart deployment/frontend -n sla-monitoring
 
-            sudo kubectl rollout status deployment/backend -n sla-monitoring
-            sudo kubectl rollout status deployment/frontend -n sla-monitoring
+            sudo kubectl rollout status deployment/backend -n sla-monitoring --timeout=180s
+            sudo kubectl rollout status deployment/frontend -n sla-monitoring --timeout=180s

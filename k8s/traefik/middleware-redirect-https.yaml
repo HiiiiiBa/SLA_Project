@@ -1,0 +1,11 @@
+# Middleware optionnel : rediriger HTTP → HTTPS (à activer seulement si websecure est prêt)
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: sla-monitoring
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true

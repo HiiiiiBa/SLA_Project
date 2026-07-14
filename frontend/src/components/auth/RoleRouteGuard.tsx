@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 const ALL_FORBIDDEN_PREFIXES = ["/notifications", "/services"];
-const CLIENT_FORBIDDEN_PREFIXES = ["/admin", "/clients", "/teams", "/services"];
+const CLIENT_FORBIDDEN_PREFIXES = ["/admin", "/clients", "/teams", "/services", "/maintenance"];
 const EMPLOYEE_FORBIDDEN_PREFIXES = ["/admin", "/clients", "/teams", "/services"];
 const MANAGER_FORBIDDEN_PREFIXES = ["/services"];
 

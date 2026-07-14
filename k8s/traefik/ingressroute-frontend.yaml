@@ -1,0 +1,43 @@
+# Traefik IngressRoute (recommandé) — route explicite sur l'entrypoint web
+# Remplace l'Ingress Kubernetes standard qui peut être ignoré / mal câblé.
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: frontend
+  namespace: sla-monitoring
+  labels:
+    app: frontend
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`sla-monitoring.local`)
+      kind: Rule
+      services:
+        - name: frontend
+          port: 3000
+          # Next.js écoute HTTP plain ; pas de TLS vers le backend
+          scheme: http
+---
+# Option HTTPS (si certificats / entrypoint websecure déjà configurés)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: frontend-secure
+  namespace: sla-monitoring
+  labels:
+    app: frontend
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`sla-monitoring.local`)
+      kind: Rule
+      services:
+        - name: frontend
+          port: 3000
+          scheme: http
+  # Décommentez si vous avez un certificat TLS (secret ou cert-manager)
+  # tls:
+  #   secretName: sla-monitoring-tls

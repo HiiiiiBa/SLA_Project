@@ -1,7 +1,8 @@
 import { clearAuth, getStoredAuth, storeAuth } from "@/lib/auth-storage";
 import type { ApiResponse, AuthUser, LoginRequest } from "@/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+// Empty = same-origin (Traefik routes /api → backend). Override via NEXT_PUBLIC_API_URL at build time.
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export class ApiError extends Error {
   constructor(

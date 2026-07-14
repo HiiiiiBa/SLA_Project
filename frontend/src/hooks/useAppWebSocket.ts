@@ -7,7 +7,11 @@ import { getStoredAuth } from "@/lib/auth-storage";
 import { useSessionUserId } from "@/hooks/useSessionUserId";
 import type { AlertNotification, ApprovalNotification } from "@/types";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:8080/ws";
+function resolveWsUrl(): string {
+  if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
+  if (typeof window !== "undefined") return `${window.location.origin}/ws`;
+  return "http://localhost:8080/ws";
+}
 
 interface UseAppWebSocketOptions {
   onConnectionChange?: (connected: boolean) => void;
@@ -31,7 +35,7 @@ export function useAppWebSocket(
     if (!auth?.accessToken || !sessionUserId) return;
 
     const client = new Client({
-      webSocketFactory: () => new SockJS(WS_URL),
+      webSocketFactory: () => new SockJS(resolveWsUrl()),
       connectHeaders: {
         Authorization: `Bearer ${auth.accessToken}`,
       },

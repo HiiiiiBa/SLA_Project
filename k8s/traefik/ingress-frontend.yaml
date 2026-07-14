@@ -1,0 +1,27 @@
+# Ingress Kubernetes corrigé (fallback si IngressRoute non souhaité)
+# Points critiques pour Traefik v3 :
+# 1. ingressClassName: traefik
+# 2. Annotation entrypoints = web (port LB 80 → container 8000)
+# 3. Host exact : sla-monitoring.local (obligatoire dans le header Host)
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend
+  namespace: sla-monitoring
+  annotations:
+    # Force la route sur l'entrypoint HTTP (web:8000), mappé sur :80 du LoadBalancer
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: sla-monitoring.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000
