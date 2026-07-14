@@ -1,0 +1,230 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: sla-monitoring
+data:
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        access: proxy
+        url: http://prometheus.sla-monitoring.svc.cluster.local:9090
+        isDefault: true
+        editable: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-provider
+  namespace: sla-monitoring
+data:
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: SLA Monitoring
+        orgId: 1
+        folder: SLA
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-sla
+  namespace: sla-monitoring
+data:
+  sla-overview.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "title": "HTTP request rate",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "id": 1,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum(rate(http_server_requests_seconds_count{application=\"sla-monitoring\"}[5m])) by (status)",
+              "legendFormat": "{{status}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+        },
+        {
+          "title": "HTTP latency p95",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "id": 2,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"sla-monitoring\"}[5m])) by (le))",
+              "legendFormat": "p95",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+        },
+        {
+          "title": "JVM heap used",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "id": 3,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "jvm_memory_used_bytes{application=\"sla-monitoring\",area=\"heap\"}",
+              "legendFormat": "{{id}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] }
+        },
+        {
+          "title": "Backend UP",
+          "type": "stat",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "id": 4,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "up{job=\"sla-backend\"}",
+              "legendFormat": "backend",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } }, "type": "value" }
+              ]
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background"
+          }
+        },
+        {
+          "title": "Traefik request rate",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+          "id": 5,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum(rate(traefik_entrypoint_requests_total[5m])) by (entrypoint)",
+              "legendFormat": "{{entrypoint}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 39,
+      "tags": ["sla", "spring", "traefik"],
+      "templating": { "list": [] },
+      "time": { "from": "now-1h", "to": "now" },
+      "timezone": "browser",
+      "title": "SLA Monitoring Overview",
+      "uid": "sla-overview",
+      "version": 1
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: sla-monitoring
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.5.2
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin
+            - name: GF_USERS_ALLOW_SIGN_UP
+              value: "false"
+            - name: GF_SERVER_ROOT_URL
+              value: http://grafana.sla-monitoring.local/
+            - name: GF_INSTALL_PLUGINS
+              value: ""
+          ports:
+            - containerPort: 3000
+              name: http
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboards-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
+            - name: data
+              mountPath: /var/lib/grafana
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+        - name: dashboards-provider
+          configMap:
+            name: grafana-dashboards-provider
+        - name: dashboards
+          configMap:
+            name: grafana-dashboard-sla
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: sla-monitoring
+  labels:
+    app: grafana
+spec:
+  selector:
+    app: grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000

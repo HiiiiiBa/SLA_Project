@@ -23,6 +23,13 @@ spec:
         - name: backend
           port: 8080
           scheme: http
+    - match: Host(`sla-monitoring.local`) && PathPrefix(`/actuator`)
+      kind: Rule
+      priority: 100
+      services:
+        - name: backend
+          port: 8080
+          scheme: http
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -43,6 +50,13 @@ spec:
           port: 8080
           scheme: http
     - match: Host(`sla-monitoring.local`) && PathPrefix(`/ws`)
+      kind: Rule
+      priority: 100
+      services:
+        - name: backend
+          port: 8080
+          scheme: http
+    - match: Host(`sla-monitoring.local`) && PathPrefix(`/actuator`)
       kind: Rule
       priority: 100
       services:

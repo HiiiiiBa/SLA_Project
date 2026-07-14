@@ -127,6 +127,13 @@ class AuthSecurityIntegrationTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    @DisplayName("Actuator prometheus endpoint is public")
+    void actuatorPrometheusIsPublic() throws Exception {
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isOk());
+    }
+
     private void registerUser(String email, String password) throws Exception {
         RegisterRequest registerRequest = RegisterRequest.builder()
                 .firstName("Test")
