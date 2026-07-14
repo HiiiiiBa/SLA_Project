@@ -1,0 +1,30 @@
+---
+- name: SLA Monitoring — base OS packages
+  hosts: sla_prod
+  become: true
+  tasks:
+    - name: Refresh apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install useful packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - ca-certificates
+          - jq
+          - net-tools
+          - htop
+          - git
+        state: present
+
+    - name: Ensure Docker is present (used by CD image import)
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+      failed_when: false
+
+    - name: Show Docker version
+      ansible.builtin.debug:
+        msg: "{{ docker_version.stdout | default('docker not found') }}"

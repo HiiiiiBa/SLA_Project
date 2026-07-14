@@ -1,0 +1,7 @@
+[sla_prod]
+sla-monitoring-server-prod ansible_host=84.8.216.210
+
+[sla_prod:vars]
+ansible_user=ubuntu
+# Override locally if needed:
+# ansible_ssh_private_key_file=C:\Users\HP\.ssh\ssh-key-2026-07-09.key

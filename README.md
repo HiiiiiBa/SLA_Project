@@ -15,6 +15,13 @@ Système intelligent de gestion des SLA — backend Spring Boot + frontend Next.
 | PostgreSQL | *(interne Docker)* | Base `sla_monitoring` — non exposée sur l'hôte par défaut |
 | MailHog UI | http://localhost:8025 | Emails de test capturés |
 
+## Infra as Code (DevOps)
+
+Voir [`infra/README.md`](infra/README.md) :
+
+- **Terraform** — réseau OCI (VCN, Security List 22/80/443)
+- **Ansible** — configuration / vérif du serveur K3s
+
 ## Démarrage rapide
 
 ### Prérequis

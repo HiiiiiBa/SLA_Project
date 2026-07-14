@@ -1,0 +1,9 @@
+---
+- name: SLA Monitoring — full server check
+  import_playbook: 01-common.yml
+
+- name: Firewall
+  import_playbook: 02-firewall.yml
+
+- name: Kubernetes health
+  import_playbook: 03-k3s-check.yml

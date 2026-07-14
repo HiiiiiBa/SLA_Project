@@ -1,0 +1,17 @@
+# Copy to terraform.tfvars (do NOT commit terraform.tfvars with secrets)
+
+region         = "af-casablanca-1"
+compartment_id = "ocid1.tenancy.oc1..aaaaaaa..." # replace with your compartment OCID
+project_name   = "sla-monitoring"
+
+vcn_cidr    = "10.0.0.0/16"
+subnet_cidr = "10.0.0.0/24"
+
+# Keep false if the VM already exists (recommended for this project)
+create_compute = false
+
+# Required only if create_compute = true
+# ssh_public_key  = "ssh-rsa AAAA..."
+# ubuntu_image_id = "ocid1.image.oc1.af-casablanca-1...."
+
+ssh_allowed_cidr = "0.0.0.0/0"

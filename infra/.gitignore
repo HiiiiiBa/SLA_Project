@@ -1,0 +1,11 @@
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+terraform/crash.log
+
+# Ansible
+ansible/inventory/hosts.ini
+ansible/*.retry

@@ -1,0 +1,48 @@
+---
+- name: SLA Monitoring — host firewall (iptables) for Traefik
+  hosts: sla_prod
+  become: true
+  tasks:
+    - name: Ensure ACCEPT rules exist before final REJECT (HTTP/HTTPS/Traefik)
+      ansible.builtin.shell: |
+        set -e
+        ensure_rule() {
+          local port="$1"
+          local comment="$2"
+          if ! iptables -C INPUT -p tcp -m state --state NEW -m tcp --dport "$port" -j ACCEPT 2>/dev/null; then
+            # Insert before REJECT if present
+            local reject_line
+            reject_line=$(iptables -L INPUT -n --line-numbers | awk '/REJECT/ {print $1; exit}')
+            if [ -n "$reject_line" ]; then
+              iptables -I INPUT "$reject_line" -p tcp -m state --state NEW -m tcp --dport "$port" -j ACCEPT -m comment --comment "$comment"
+            else
+              iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport "$port" -j ACCEPT -m comment --comment "$comment"
+            fi
+            echo "added:$port"
+          else
+            echo "exists:$port"
+          fi
+        }
+        ensure_rule 80 "sla-http"
+        ensure_rule 443 "sla-https"
+        ensure_rule 8000 "traefik-web"
+        ensure_rule 8443 "traefik-websecure"
+      args:
+        executable: /bin/bash
+      register: fw_result
+      changed_when: "'added:' in fw_result.stdout"
+
+    - name: Persist iptables if netfilter-persistent is available
+      ansible.builtin.command: netfilter-persistent save
+      register: persist
+      changed_when: persist.rc == 0
+      failed_when: false
+
+    - name: Show INPUT rules summary
+      ansible.builtin.command: iptables -L INPUT -n --line-numbers
+      register: input_rules
+      changed_when: false
+
+    - name: Firewall snapshot
+      ansible.builtin.debug:
+        var: input_rules.stdout_lines

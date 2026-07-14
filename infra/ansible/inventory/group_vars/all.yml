@@ -1,0 +1,23 @@
+project_name: sla-monitoring
+k8s_namespace: sla-monitoring
+
+# Host ports expected open on the node (iptables)
+open_tcp_ports:
+  - 22
+  - 80
+  - 443
+  - 8000
+  - 8443
+
+monitoring_hosts:
+  - grafana.sla-monitoring.local
+  - prometheus.sla-monitoring.local
+  - sla-monitoring.local
+
+expected_deployments:
+  - backend
+  - frontend
+  - postgres
+  - prometheus
+  - grafana
+  - loki

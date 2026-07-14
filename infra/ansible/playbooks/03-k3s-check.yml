@@ -1,0 +1,66 @@
+---
+- name: SLA Monitoring — verify K3s cluster health
+  hosts: sla_prod
+  become: true
+  tasks:
+    - name: Check k3s service
+      ansible.builtin.systemd:
+        name: k3s
+      register: k3s_svc
+      failed_when: false
+      check_mode: false
+
+    - name: Fail if k3s is not active
+      ansible.builtin.assert:
+        that:
+          - k3s_svc.status.ActiveState == "active"
+        fail_msg: "k3s is not active"
+        success_msg: "k3s is active"
+
+    - name: Get nodes
+      ansible.builtin.command: kubectl get nodes -o wide
+      register: nodes
+      changed_when: false
+
+    - name: Show nodes
+      ansible.builtin.debug:
+        var: nodes.stdout_lines
+
+    - name: Get pods in project namespace
+      ansible.builtin.command: "kubectl get pods -n {{ k8s_namespace }} -o wide"
+      register: pods
+      changed_when: false
+
+    - name: Show pods
+      ansible.builtin.debug:
+        var: pods.stdout_lines
+
+    - name: Ensure expected deployments are available
+      ansible.builtin.shell: |
+        set -e
+        for d in {{ expected_deployments | join(' ') }}; do
+          ready=$(kubectl get deploy "$d" -n {{ k8s_namespace }} -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo 0)
+          desired=$(kubectl get deploy "$d" -n {{ k8s_namespace }} -o jsonpath='{.status.replicas}' 2>/dev/null || echo 0)
+          echo "$d ready=${ready:-0} desired=${desired:-0}"
+          if [ "${ready:-0}" = "0" ] || [ "${ready:-0}" != "${desired:-0}" ]; then
+            echo "NOT_READY:$d"
+          fi
+        done
+      args:
+        executable: /bin/bash
+      register: deploys
+      changed_when: false
+      failed_when: "'NOT_READY:' in deploys.stdout"
+
+    - name: Deployment readiness
+      ansible.builtin.debug:
+        var: deploys.stdout_lines
+
+    - name: Check Traefik IngressRoutes
+      ansible.builtin.command: kubectl get ingressroute -n {{ k8s_namespace }}
+      register: routes
+      changed_when: false
+
+    - name: IngressRoutes
+      ansible.builtin.debug:
+        var: routes.stdout_lines
